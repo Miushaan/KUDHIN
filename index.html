@@ -1,214 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KUDHIN SPLIT — Modern</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
-    .flat-input { border: 1px solid #ddd; background: #f9f9f9; }
-    .flat-input:focus { background: #fff; outline: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bill Splitter</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f0f2f5; color:#333; }
+  .flat-input { border-radius:0; border-bottom:2px solid #ccc; background:transparent; padding:0.75rem; transition:border-color 0.2s; }
+  .flat-input:focus { outline:none; border-color:#3b82f6; }
+  .flat-btn { border-radius:0; box-shadow:none; }
+  .flat-card { border-radius:0.5rem; box-shadow:none; background:white; padding:1rem; }
+  @media print { .no-print { display:none !important; } }
+  .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
+  @keyframes slide-up { from { transform:translateY(100px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+</style>
 </head>
-<body class="bg-gray-100 h-screen flex flex-col">
+<body class="min-h-screen">
 
-  <!-- Header -->
-  <header class="glass p-4 shadow-md text-center text-xl font-bold text-blue-700">KUDHIN SPLIT</header>
+<div id="app" class="container mx-auto p-4 max-w-md"></div>
+<div id="modalContainer"></div>
+<div id="messageContainer"></div>
 
-  <!-- Main -->
-  <main id="main" class="flex-1 overflow-y-auto p-4 max-w-md mx-auto w-full">
-    <!-- Bill screen -->
-    <section id="bill-screen" class="space-y-4">
-      <div class="glass rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-3">Bill Details</h2>
-        <input id="bill-name" placeholder="Bill Name" class="w-full px-4 py-3 flat-input rounded-lg text-base mb-3">
-        <input id="bill-date" type="date" class="w-full px-4 py-3 flat-input rounded-lg text-base mb-3">
-        <input id="bill-total" type="number" placeholder="Actual Paid Total (MVR)" class="w-full px-4 py-3 flat-input rounded-lg text-base">
-      </div>
+<script>
+/* ---------------------- CONFIG & STATE ---------------------- */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsDZ462_BV5mP4z1OqWu3F4WQWuB7seomvjuzkXaEijE1ZnSNB2p0_gHHM4zEgT0_Rw/exec";
+const GST_RATE = 8;
 
-      <div class="glass rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-3">Items</h2>
-        <div id="items-list" class="space-y-2"></div>
-        <button onclick="addItem()" class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">+ Add Item</button>
-      </div>
+let people = [
+  {id:'miu', name:'Miu'}, {id:'raya', name:'Raya'}, {id:'aslan', name:'Aslan'},
+  {id:'reesha', name:'Reesha'}, {id:'appal', name:'Appal'}, {id:'uly', name:'Uly'},
+  {id:'irufaan', name:'Irufaan'}
+];
+let items = [], isGstEnabled=false, otherCharges=0, selectedPersonId=people[0].id;
+let currentScreen='main', modalType=null, message=null;
+let billDate='', vendorName='', actualPaidTotal='', payerName='', billCounter=1;
+let savedBills = JSON.parse(localStorage.getItem('savedBills')||'[]');
 
-      <div class="glass rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-3">Options</h2>
-        <label class="flex items-center space-x-2 mb-2">
-          <input id="gst-toggle" type="checkbox" class="h-5 w-5 text-blue-600">
-          <span>Include GST (8%)</span>
-        </label>
-        <input id="other-charges" type="number" placeholder="Other Charges (MVR)" class="w-full px-4 py-3 flat-input rounded-lg text-base">
-      </div>
+/* ---------------------- UTILITY ---------------------- */
+const getIcon=(name)=>lucide.icons[name] ? lucide.icons[name] : '';
+const showMessage=(text,type='success')=>{
+  message={text,type};
+  renderMessage();
+  setTimeout(()=>{message=null; renderMessage();},3000);
+};
+const capitalize=(str)=>str ? str.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
 
-      <button onclick="goToReport()" class="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">Generate Report</button>
-    </section>
+/* ---------------------- RENDER ---------------------- */
+const renderApp=()=>{
+  const appDiv=document.getElementById('app');
+  appDiv.innerHTML=`<h1 class="text-3xl font-extrabold text-center mb-6 text-blue-600">Bill Splitter</h1>`;
+  if(currentScreen==='main'){ renderMainScreen(); } else { renderHistoryScreen(); }
+  renderModal(); renderMessage();
+};
 
-    <!-- Report screen -->
-    <section id="report-screen" class="hidden space-y-4"></section>
+const renderMainScreen=()=>{
+  const appDiv=document.getElementById('app');
+  const itemsByPerson = items.reduce((acc,it)=>{ (acc[it.assignedTo]=acc[it.assignedTo]||[]).push(it); return acc; },{});
+  const container=document.createElement('div');
+  container.className='space-y-5';
 
-    <!-- History screen -->
-    <section id="history-screen" class="hidden space-y-4">
-      <h2 class="text-lg font-semibold mb-3">Saved Bills</h2>
-      <div id="history-list" class="space-y-2"></div>
-    </section>
-  </main>
+  container.innerHTML=`
+  <div class="flat-card space-y-3">
+    <h2 class="font-bold text-lg text-gray-800">Bill Details</h2>
+    <input type="date" id="billDate" value="${billDate}" class="w-full flat-input">
+    <input type="text" id="vendorName" placeholder="Vendor Name" value="${vendorName}" class="w-full flat-input">
+    <input type="number" id="actualPaidTotal" placeholder="Actual Paid Total" value="${actualPaidTotal}" step="0.01" class="w-full flat-input">
+  </div>
+  
+  <div class="flat-card space-y-3">
+    <h2 class="font-bold text-lg text-gray-800">Add Item</h2>
+    <select id="personSelect" class="w-full flat-input mb-2">${people.map(p=>`<option value="${p.id}" ${selectedPersonId===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
+    <input type="text" id="itemName" placeholder="Item Name" class="w-full flat-input mb-2">
+    <input type="number" id="itemCost" placeholder="Cost" class="w-full flat-input mb-2" step="0.01">
+    <button id="addItemBtn" class="w-full flat-btn bg-blue-600 text-white font-semibold py-2">Add Item</button>
+  </div>
 
-  <!-- Bottom Nav -->
-  <nav class="glass shadow-inner flex justify-around p-2">
-    <button onclick="switchTab('bill-screen')" class="flex flex-col items-center text-blue-600">
-      <span id="bill-icon"></span>
-      <span class="text-sm">Bill</span>
-    </button>
-    <button onclick="switchTab('report-screen')" class="flex flex-col items-center text-gray-500">
-      <span id="report-icon"></span>
-      <span class="text-sm">Report</span>
-    </button>
-    <button onclick="switchTab('history-screen')" class="flex flex-col items-center text-gray-500">
-      <span id="history-icon"></span>
-      <span class="text-sm">History</span>
-    </button>
-  </nav>
+  <div class="flat-card space-y-2">
+    <h2 class="font-bold text-lg text-gray-800">Current Items</h2>
+    ${people.map(p=>{
+      const personItems=itemsByPerson[p.id]||[];
+      if(personItems.length===0) return '';
+      return `<div class="p-2 border-b last:border-b-0">
+        <p class="font-semibold text-blue-600">${p.name}</p>
+        ${personItems.map(it=>`<div class="flex justify-between text-gray-800 text-sm py-1">
+          <span>${it.name}</span>
+          <span>MVR${it.cost.toFixed(2)} <button data-id="${it.id}" class="text-red-500 remove-item-btn">${getIcon('X')}</button></span>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}
+    ${items.length===0?'<p class="text-gray-500 text-center text-sm">No items yet</p>':''}
+  </div>
 
-  <!-- Message -->
-  <div id="message" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg hidden"></div>
+  <div class="flex gap-2">
+    <button id="toggleGst" class="flex-1 flat-btn py-2 ${isGstEnabled?'bg-green-600 text-white':'bg-gray-300'}">GST ${isGstEnabled?`(${GST_RATE}%)`:''}</button>
+    <input type="number" id="otherCharges" value="${otherCharges}" placeholder="Other" class="flex-1 flat-input">
+  </div>
 
-  <script>
-    // Google Script backend
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsDZ462_BV5mP4z1OqWu3F4WQWuB7seomvjuzkXaEijE1ZnSNB2p0_gHHM4zEgT0_Rw/exec";
+  <div class="flex gap-2">
+    <button id="resetBillBtn" class="flex-1 bg-red-600 text-white flat-btn py-2">Reset</button>
+    <button id="generateBillBtn" class="flex-1 bg-purple-600 text-white flat-btn py-2">Generate Bill</button>
+    <button id="historyTabBtn" class="flex-1 bg-gray-300 flat-btn py-2">History</button>
+  </div>
+  `;
+  appDiv.appendChild(container);
 
-    // Helpers
-    const showMessage = (msg, type="info") => {
-      const el = document.getElementById("message");
-      el.textContent = msg;
-      el.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white " +
-        (type==="success"?"bg-green-600":type==="error"?"bg-red-600":"bg-gray-800");
-      el.classList.remove("hidden");
-      setTimeout(()=>el.classList.add("hidden"),3000);
-    };
+  // Event listeners
+  document.getElementById('addItemBtn').onclick=()=>{ 
+    const name=capitalize(document.getElementById('itemName').value.trim());
+    const cost=parseFloat(document.getElementById('itemCost').value);
+    const pid=document.getElementById('personSelect').value;
+    if(!name||isNaN(cost)||cost<=0){showMessage('Invalid item','error');return;}
+    items.push({id:`item-${Date.now()}`,name,cost,assignedTo:pid});
+    document.getElementById('itemName').value=''; document.getElementById('itemCost').value=''; renderApp();
+  };
+  document.querySelectorAll('.remove-item-btn').forEach(btn=>{
+    btn.onclick=()=>{ items=items.filter(it=>it.id!==btn.getAttribute('data-id')); renderApp(); };
+  });
+  document.getElementById('toggleGst').onclick=()=>{ isGstEnabled=!isGstEnabled; renderApp(); };
+  document.getElementById('otherCharges').oninput=(e)=>{ otherCharges=parseFloat(e.target.value)||0; };
+  document.getElementById('resetBillBtn').onclick=()=>{ items=[]; billDate=''; vendorName=''; actualPaidTotal=''; renderApp(); };
+  document.getElementById('generateBillBtn').onclick=()=>{ modalType='selectPayer'; renderModal(); };
+  document.getElementById('historyTabBtn').onclick=()=>{ currentScreen='history'; renderApp(); };
+};
 
-    const getIcon = (name, size=20) => {
-      if (!lucide.icons[name]) return "";
-      return lucide.icons[name]({width:size,height:size}).outerHTML;
-    };
-
-    // Nav icons
-    document.getElementById("bill-icon").innerHTML = getIcon("file-text");
-    document.getElementById("report-icon").innerHTML = getIcon("bar-chart-2");
-    document.getElementById("history-icon").innerHTML = getIcon("clock");
-
-    // State
-    let items = [];
-
-    const switchTab = (id) => {
-      ["bill-screen","report-screen","history-screen"].forEach(s=>{
-        document.getElementById(s).classList.add("hidden");
-      });
-      document.getElementById(id).classList.remove("hidden");
-      if(id==="report-screen") updateReportScreen();
-      if(id==="history-screen") loadBills();
-    };
-
-    // Add Item
-    const addItem = () => {
-      const item = {name:"",qty:1,price:0};
-      items.push(item);
-      renderItems();
-    };
-
-    const renderItems = () => {
-      const list = document.getElementById("items-list");
-      list.innerHTML = "";
-      items.forEach((it,i)=>{
-        const row = document.createElement("div");
-        row.className = "flex space-x-2";
-        row.innerHTML = `
-          <input placeholder="Item" value="${it.name}" oninput="items[${i}].name=this.value" class="flex-1 px-3 py-2 flat-input rounded-lg">
-          <input type="number" value="${it.qty}" oninput="items[${i}].qty=this.value" class="w-16 px-3 py-2 flat-input rounded-lg">
-          <input type="number" value="${it.price}" oninput="items[${i}].price=this.value" class="w-24 px-3 py-2 flat-input rounded-lg">
-          <button onclick="removeItem(${i})" class="text-red-600">${getIcon("trash")}</button>
-        `;
-        list.appendChild(row);
-      });
-    };
-
-    const removeItem = (i) => { items.splice(i,1); renderItems(); };
-
-    // Report
-    const goToReport = () => {
-      switchTab("report-screen");
-    };
-
-    const updateReportScreen = () => {
-      const name = document.getElementById("bill-name").value;
-      const date = document.getElementById("bill-date").value;
-      const total = parseFloat(document.getElementById("bill-total").value||0);
-      const gst = document.getElementById("gst-toggle").checked;
-      const other = parseFloat(document.getElementById("other-charges").value||0);
-
-      let subtotal = items.reduce((s,i)=>s+(i.qty*i.price),0);
-      if(gst) subtotal *= 1.08;
-      subtotal += other;
-
-      const report = document.getElementById("report-screen");
-      report.innerHTML = `
-        <div class="glass p-4 rounded-lg shadow">
-          <h2 class="text-lg font-semibold mb-3">Report</h2>
-          <p><b>Name:</b> ${name}</p>
-          <p><b>Date:</b> ${date}</p>
-          <p><b>Total (Calculated):</b> MVR ${subtotal.toFixed(2)}</p>
-          <p><b>Total (Entered):</b> MVR ${total.toFixed(2)}</p>
+const renderHistoryScreen=()=>{
+  const appDiv=document.getElementById('app');
+  const container=document.createElement('div'); container.className='space-y-4';
+  container.innerHTML=`<button id="backBtn" class="flat-btn py-2 px-3 bg-gray-300 w-full">Back</button>`;
+  savedBills.reverse().forEach((b,i)=>{
+    container.innerHTML+=`
+      <div class="flat-card">
+        <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('billDetail${i}').classList.toggle('hidden')">
+          <span class="font-bold">${b.billNumber} - ${b.vendor}</span>
+          <span>MVR${b.actualPaidTotal}</span>
         </div>
-        <button onclick="saveBill()" class="w-full mt-3 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold">Save Bill</button>
-      `;
-    };
+        <div id="billDetail${i}" class="hidden mt-2 space-y-1">
+          <p>Date: ${b.billDate}</p>
+          <p>Payer: ${b.payer}</p>
+          <p>Items:</p>
+          ${b.items.map(it=>`<div class="flex justify-between text-sm"><span>${it.name}</span><span>MVR${it.cost.toFixed(2)}</span></div>`).join('')}
+        </div>
+      </div>`;
+  });
+  appDiv.appendChild(container);
+  document.getElementById('backBtn').onclick=()=>{ currentScreen='main'; renderApp(); };
+};
 
-    // Save to Google Sheet
-    const saveBill = async () => {
-      const data = {
-        name: document.getElementById("bill-name").value,
-        date: document.getElementById("bill-date").value,
-        total: document.getElementById("bill-total").value,
-        items: items
-      };
-      try {
-        const res = await fetch(GOOGLE_SCRIPT_URL,{
-          method:"POST",
-          body: JSON.stringify({action:"saveBill", bill:data}),
-          headers:{"Content-Type":"application/json"}
-        });
-        const out = await res.json();
-        if(out.success) showMessage("Bill saved successfully!","success");
-        else showMessage("Save failed","error");
-      } catch(e) {
-        showMessage("Error saving bill","error");
-        console.error(e);
-      }
+const renderModal=()=>{
+  const modalContainer=document.getElementById('modalContainer'); if(!modalType){modalContainer.innerHTML=''; return;}
+  if(modalType==='selectPayer'){
+    modalContainer.innerHTML=`
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="flat-card w-full max-w-sm text-center space-y-3">
+          <h3 class="font-semibold text-lg">Select Payer</h3>
+          <select id="payerSelect" class="w-full flat-input mb-2">${people.map(p=>`<option value="${p.name}">${p.name}</option>`).join('')}</select>
+          <div class="flex gap-2">
+            <button id="cancelPayerBtn" class="flex-1 flat-btn bg-gray-300 py-2">Cancel</button>
+            <button id="confirmPayerBtn" class="flex-1 flat-btn bg-purple-600 text-white py-2">Confirm</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('cancelPayerBtn').onclick=()=>{ modalType=null; renderModal(); };
+    document.getElementById('confirmPayerBtn').onclick=()=>{
+      payerName=document.getElementById('payerSelect').value; modalType=null; generateBill();
     };
+  }
+};
 
-    // Load saved bills
-    const loadBills = async () => {
-      try {
-        const res = await fetch(GOOGLE_SCRIPT_URL+"?action=getBills");
-        const out = await res.json();
-        const list = document.getElementById("history-list");
-        list.innerHTML = "";
-        if(out.success && out.bills.length){
-          out.bills.forEach(b=>{
-            const div=document.createElement("div");
-            div.className="glass p-3 rounded-lg shadow";
-            div.innerHTML=`<b>${b.name}</b> - ${b.date} - MVR ${b.total}`;
-            list.appendChild(div);
-          });
-        } else {
-          list.innerHTML = "<p class='text-gray-500'>No saved bills.</p>";
-        }
-      } catch(e) {
-        showMessage("Error loading bills","error");
-      }
-    };
-  </script>
+const renderMessage=()=>{ 
+  const msgDiv=document.getElementById('messageContainer'); 
+  if(!message){msgDiv.innerHTML=''; return;}
+  msgDiv.innerHTML=`<div class="fixed top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded shadow text-white z-50 bg-${message.type==='success'?'green':'red'}-500">${message.text}</div>`;
+};
+
+/* ---------------------- BILL GENERATION ---------------------- */
+const generateBill=()=>{
+  if(items.length===0){showMessage('Add items first','error'); return;}
+  const bill={billNumber:billCounter++, billDate, vendor:vendorName, actualPaidTotal, payer:payerName, items, gstEnabled:isGstEnabled, otherCharges};
+  savedBills.push(bill); localStorage.setItem('savedBills',JSON.stringify(savedBills));
+  fetch(GOOGLE_SCRIPT_URL,{method:'POST',body:JSON.stringify(bill)}).then(()=>showMessage('Bill saved')).catch(()=>showMessage('Error','error'));
+  items=[]; actualPaidTotal=''; renderApp();
+};
+
+/* ---------------------- INIT ---------------------- */
+window.onload=()=>{ renderApp(); };
+</script>
 </body>
 </html>
