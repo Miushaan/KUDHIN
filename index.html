@@ -11,8 +11,8 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Dark background */
-            color: #ffffff; /* White text */
+            background-color: #f0f2f5; /* Light gray background */
+            color: #333; /* Dark text */
         }
         /* Custom animation for the message box */
         @keyframes slide-up {
@@ -33,6 +33,26 @@
             .no-print {
                 display: none !important;
             }
+        }
+        .flat-input {
+            border-radius: 0;
+            border-bottom: 2px solid #ccc;
+            background-color: transparent;
+            padding-left: 0;
+            padding-right: 0;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .flat-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .flat-btn {
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .flat-card {
+            border-radius: 0;
+            box-shadow: none;
         }
     </style>
 </head>
@@ -69,20 +89,33 @@
         let billDate = '';
         let vendorName = '';
         let actualPaidTotal = '';
+        let calculatedGrandTotal = 0;
+        let payerName = '';
+        
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        const GOOGLE_SCRIPT_URL = "YOUR_DEPLOYED_URL_GOES_HERE";
 
         const GST_RATE = 8;
         const appDiv = document.getElementById('app');
 
         // --- Utility Functions ---
 
-        // Helper to find an icon from the Lucide library
+        /**
+         * Fetches and returns the SVG string for a given Lucide icon.
+         * @param {string} name The name of the icon.
+         * @returns {string} The SVG string for the icon, or an empty string if not found.
+         */
         const getIcon = (name) => {
-            const icon = lucide.createIcons()[name];
-            if (icon) {
-                const svg = icon.toSvg();
-                return svg;
+            // Check if the Lucide library and the specific icon are available
+            if (typeof lucide !== 'object' || !lucide.icons[name]) {
+                console.error(`Lucide library or icon '${name}' not available.`);
+                return '';
             }
-            return '';
+
+            // In this specific UMD bundle, the icon is a string containing the SVG.
+            // We can return it directly.
+            const icon = lucide.icons[name];
+            return icon;
         };
 
         // Capitalizes the first letter of each word in a string
@@ -101,13 +134,30 @@
             }, 3000);
         };
 
+        // Resets the app to its initial state
+        const resetApp = () => {
+            items = [];
+            isGstEnabled = false;
+            otherCharges = '';
+            paidBy = '';
+            currentScreen = 'main';
+            modalType = null;
+            billDate = '';
+            vendorName = '';
+            actualPaidTotal = '';
+            calculatedGrandTotal = 0;
+            payerName = '';
+            renderApp();
+            showMessage('Bill cleared!', 'success');
+        };
+
         // --- State Update & Rendering Functions ---
 
         // Main render function that calls sub-renderers based on the current screen
         const renderApp = () => {
             appDiv.innerHTML = `
-                <h1 class="text-4xl font-extrabold text-center text-white mb-8">
-                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-500">Bill Splitter</span>
+                <h1 class="text-3xl font-extrabold text-center mb-8">
+                    <span class="text-blue-600">Bill Splitter</span>
                 </h1>
             `;
 
@@ -131,43 +181,43 @@
             const mainContent = document.createElement('div');
             mainContent.className = "p-6 space-y-6 no-print";
             mainContent.innerHTML = `
-                <h2 class="text-2xl font-bold text-center text-white">Add Bill Items</h2>
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
-                    <h3 class="text-xl font-bold text-teal-400">Bill Details</h3>
-                    <input type="date" id="billDate" value="${billDate}" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
-                    <input type="text" id="vendorName" value="${vendorName}" placeholder="Vendor Name" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
-                    <input type="number" id="actualPaidTotal" value="${actualPaidTotal}" placeholder="Actual Paid Total (MVR)" step="0.01" min="0.01" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
+                <h2 class="text-2xl font-bold text-center text-gray-800">Add Bill Items</h2>
+                <div class="bg-white p-6 flat-card space-y-4">
+                    <h3 class="text-xl font-bold text-blue-600">Bill Details</h3>
+                    <input type="date" id="billDate" value="${billDate}" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500" required />
+                    <input type="text" id="vendorName" value="${vendorName}" placeholder="Vendor Name" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500" required />
+                    <input type="number" id="actualPaidTotal" value="${actualPaidTotal}" placeholder="Actual Paid Total (MVR)" step="0.01" min="0.01" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500" required />
                 </div>
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
-                    <h3 class="text-xl font-bold text-teal-400">Add New Item</h3>
+                <div class="bg-white p-6 flat-card space-y-4">
+                    <h3 class="text-xl font-bold text-blue-600">Add New Item</h3>
                     <form id="addItemForm" class="space-y-4">
-                        <label class="text-gray-400">Who is this item for?</label>
-                        <select id="personSelect" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <label class="text-gray-600">Who is this item for?</label>
+                        <select id="personSelect" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500">
                             ${people.map(person => `<option value="${person.id}" ${selectedPersonId === person.id ? 'selected' : ''}>${person.name}</option>`).join('')}
                         </select>
-                        <input type="text" id="itemName" placeholder="Item Name" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
-                        <input type="number" id="itemCost" placeholder="Item Cost (MVR)" step="0.01" min="0.01" class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
-                        <button type="submit" class="w-full px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold shadow-lg hover:bg-teal-700 transition-colors duration-200">
+                        <input type="text" id="itemName" placeholder="Item Name" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500" required />
+                        <input type="number" id="itemCost" placeholder="Item Cost (MVR)" step="0.01" min="0.01" class="w-full px-4 py-3 flat-input text-gray-800 focus:border-blue-500" required />
+                        <button type="submit" class="w-full px-4 py-3 bg-blue-600 text-white flat-btn font-semibold hover:bg-blue-700 transition-colors duration-200">
                             Add Item
                         </button>
                     </form>
                 </div>
-                <h2 class="text-2xl font-bold text-center text-white mt-8">Current Bill Items</h2>
+                <h2 class="text-2xl font-bold text-center text-gray-800 mt-8">Current Bill Items</h2>
                 <div id="itemsContainer" class="flex flex-col gap-4">
-                    ${Object.keys(itemsByPerson).length === 0 ? `<p class="text-gray-400 text-center w-full">No items added yet.</p>` : ''}
+                    ${Object.keys(itemsByPerson).length === 0 ? `<p class="text-gray-600 text-center w-full">No items added yet.</p>` : ''}
                     ${people.map(person => {
                         const personItems = itemsByPerson[person.id];
                         if (!personItems || personItems.length === 0) return '';
                         return `
-                            <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                                <h3 class="text-lg font-bold text-teal-400 mb-2">${person.name}</h3>
+                            <div class="bg-white p-4 flat-card">
+                                <h3 class="text-lg font-bold text-blue-600 mb-2">${person.name}</h3>
                                 <div class="flex flex-col gap-2">
                                     ${personItems.map(item => `
                                         <div class="flex items-center justify-between">
-                                            <p class="text-lg font-semibold text-white">${item.name}</p>
+                                            <p class="text-lg font-semibold text-gray-800">${item.name}</p>
                                             <div class="flex items-center gap-2">
-                                                <p class="text-lg font-bold text-white">MVR${item.cost.toFixed(2)}</p>
-                                                <button data-item-id="${item.id}" class="remove-item-btn text-red-400 hover:text-red-500 transition-colors">
+                                                <p class="text-lg font-bold text-gray-800">MVR${item.cost.toFixed(2)}</p>
+                                                <button data-id="${item.id}" class="remove-item-btn text-red-500 hover:text-red-700 transition-colors duration-200" title="Remove Item">
                                                     ${getIcon('X')}
                                                 </button>
                                             </div>
@@ -180,18 +230,21 @@
                 </div>
                 <div class="flex flex-col sm:flex-row items-center gap-4">
                     <div class="flex-1 flex items-center gap-2 w-full">
-                        <button id="toggleGst" class="w-full flex-1 flex items-center justify-center px-4 py-3 rounded-xl font-semibold shadow-lg transition-colors duration-200 ${isGstEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">
+                        <button id="toggleGst" class="w-full flex-1 flex items-center justify-center px-4 py-3 flat-btn font-semibold transition-colors duration-200 ${isGstEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}">
                             ${isGstEnabled ? `GST Enabled (${GST_RATE}%)` : 'Enable GST'}
                         </button>
                     </div>
                     <div class="flex-1 flex items-center gap-2 w-full">
-                        <label class="text-gray-400 whitespace-nowrap">Other Charges</label>
-                        <input type="number" id="otherCharges" value="${otherCharges}" class="w-full px-3 py-2 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                        <label class="text-gray-600 whitespace-nowrap">Other Charges</label>
+                        <input type="number" id="otherCharges" value="${otherCharges}" class="w-full px-3 py-2 flat-input text-gray-800 focus:border-blue-500" />
                     </div>
                 </div>
-                <div class="flex justify-center">
-                    <button id="generateBillBtn" class="mt-4 px-8 py-4 bg-purple-600 text-white rounded-xl font-bold text-lg shadow-xl hover:bg-purple-700 transition-colors duration-200">
-                        Generate Bill
+                <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                    <button id="resetBillBtn" class="w-full sm:w-1/2 flex justify-center items-center px-4 py-3 bg-red-600 text-white flat-btn font-semibold hover:bg-red-700 transition-colors duration-200">
+                        ${getIcon('RotateCcw')} Reset Bill
+                    </button>
+                    <button id="generateBillBtn" class="w-full sm:w-1/2 flex justify-center items-center px-4 py-3 bg-purple-600 text-white flat-btn font-bold text-lg hover:bg-purple-700 transition-colors duration-200">
+                        ${getIcon('ReceiptText')} Generate Bill
                     </button>
                 </div>
             `;
@@ -204,9 +257,9 @@
             const totalSubtotal = items.reduce((sum, item) => sum + item.cost, 0);
             const calculatedTotalGst = isGstEnabled ? totalSubtotal * (GST_RATE / 100) : 0;
             const calculatedTotalOtherCharges = parseFloat(otherCharges) || 0;
-            const calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
+            calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
 
-            const payerName = people.find(p => p.id === paidBy)?.name || 'Nobody';
+            payerName = people.find(p => p.id === paidBy)?.name || 'Nobody';
             const payerGroup = people.find(p => p.id === paidBy)?.group;
 
             const groupOwes = peopleWithItems.reduce((acc, person) => {
@@ -226,52 +279,52 @@
             const reportContent = document.createElement('div');
             reportContent.className = "p-6 space-y-6";
             reportContent.innerHTML = `
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg space-y-3">
-                    <p class="text-xs text-gray-400 text-center">Bill Number: ${billNumber}</p>
-                    <h2 class="text-2xl font-bold text-center text-white">Bill Report</h2>
-                    <div class="flex justify-between text-gray-400">
+                <div class="bg-white p-6 flat-card space-y-3">
+                    <p class="text-xs text-gray-600 text-center">Bill Number: ${billNumber}</p>
+                    <h2 class="text-2xl font-bold text-center text-gray-800">Bill Report</h2>
+                    <div class="flex justify-between text-gray-600">
                         <span>Vendor:</span>
-                        <span class="font-semibold text-white">${capitalizeWords(vendorName)}</span>
+                        <span class="font-semibold text-gray-800">${capitalizeWords(vendorName)}</span>
                     </div>
-                    <div class="flex justify-between text-gray-400">
+                    <div class="flex justify-between text-gray-600">
                         <span>Date:</span>
-                        <span class="font-semibold text-white">${billDate}</span>
+                        <span class="font-semibold text-gray-800">${billDate}</span>
                     </div>
-                    <hr class="border-gray-700 my-2" />
-                    <div class="flex justify-between text-lg font-bold text-white">
+                    <hr class="border-gray-300 my-2" />
+                    <div class="flex justify-between text-lg font-bold text-gray-800">
                         <span>Actual Paid Total:</span>
                         <span>MVR${parseFloat(actualPaidTotal).toFixed(2)}</span>
                     </div>
-                    <div class="flex justify-between text-sm font-semibold text-gray-400">
+                    <div class="flex justify-between text-sm font-semibold text-gray-600">
                         <span>Calculated Total:</span>
                         <span>MVR${calculatedGrandTotal.toFixed(2)}</span>
                     </div>
                 </div>
 
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
-                    <h3 class="text-xl font-semibold text-white">Individual Breakdown</h3>
-                    ${peopleWithItems.length === 0 ? `<p class="text-gray-400">No one has items on the bill.</p>` : `
+                <div class="bg-white p-6 flat-card space-y-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Individual Breakdown</h3>
+                    ${peopleWithItems.length === 0 ? `<p class="text-gray-600">No one has items on the bill.</p>` : `
                         ${peopleWithItems.map(person => `
-                            <div class="p-4 rounded-xl bg-gray-700 shadow-md">
-                                <p class="font-bold text-lg text-teal-400 mb-2">${person.name}</p>
+                            <div class="p-4 flat-card bg-gray-100">
+                                <p class="font-bold text-lg text-blue-600 mb-2">${person.name}</p>
                                 <div class="mb-2">
                                     ${getItemsForPerson(person.id).map(item => `
-                                        <div class="flex justify-between text-sm text-gray-300">
+                                        <div class="flex justify-between text-sm text-gray-600">
                                             <span> - ${item.name}:</span>
                                             <span>MVR${item.cost.toFixed(2)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
-                                <div class="flex justify-between text-sm text-gray-300">
+                                <div class="flex justify-between text-sm text-gray-600">
                                     <span>GST:</span>
                                     <span>MVR${person.breakdown.gst.toFixed(2)}</span>
                                 </div>
-                                <div class="flex justify-between text-sm text-gray-300">
+                                <div class="flex justify-between text-sm text-gray-600">
                                     <span>Other Charges:</span>
                                     <span>MVR${person.breakdown.otherCharges.toFixed(2)}</span>
                                 </div>
-                                <hr class="my-2 border-gray-600" />
-                                <div class="flex justify-between text-sm font-semibold text-white">
+                                <hr class="my-2 border-gray-300" />
+                                <div class="flex justify-between text-sm font-semibold text-gray-800">
                                     <span>Total Share:</span>
                                     <span>MVR${person.owes.toFixed(2)}</span>
                                 </div>
@@ -280,17 +333,17 @@
                     `}
                 </div>
 
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold text-white mb-4">Who Paid, Who Owes</h3>
-                    <div class="flex items-center text-white font-bold mb-2">
+                <div class="bg-white p-6 flat-card">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Who Paid, Who Owes</h3>
+                    <div class="flex items-center text-gray-800 font-bold mb-2">
                         <span class="mr-2">Total bill paid by:</span>
-                        <span class="font-bold text-white">${payerName}</span>
+                        <span class="font-bold text-gray-800">${payerName}</span>
                     </div>
-                    ${groupsToPay.length === 0 ? `<p class="text-gray-400">Add items to generate a report.</p>` : `
+                    ${groupsToPay.length === 0 ? `<p class="text-gray-600">Add items to generate a report.</p>` : `
                         ${groupsToPay.map(group => `
-                            <div class="flex justify-between items-center py-2 border-t border-gray-700 first:border-t-0">
-                                <span class="text-lg font-semibold text-white">${group.name}</span>
-                                <span class="flex items-center text-red-400 font-bold">
+                            <div class="flex justify-between items-center py-2 border-t border-gray-300 first:border-t-0">
+                                <span class="text-lg font-semibold text-gray-800">${group.name}</span>
+                                <span class="flex items-center text-red-500 font-bold">
                                     ${getIcon('ArrowRight')}
                                     Owes MVR${group.owes.toFixed(2)}
                                 </span>
@@ -300,10 +353,13 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-4 mt-6 no-print">
-                    <button id="printBillBtn" class="w-full flex justify-center items-center px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors duration-200">
+                    <button id="saveBillBtn" class="w-full sm:w-1/3 flex justify-center items-center px-4 py-3 bg-green-600 text-white flat-btn font-semibold hover:bg-green-700 transition-colors duration-200">
+                        ${getIcon('Save')} Save Bill
+                    </button>
+                    <button id="printBillBtn" class="w-full sm:w-1/3 flex justify-center items-center px-4 py-3 bg-blue-600 text-white flat-btn font-semibold hover:bg-blue-700 transition-colors duration-200">
                         ${getIcon('Printer')} Print Bill
                     </button>
-                    <button id="backToBillBtn" class="w-full flex justify-center items-center px-4 py-3 bg-gray-700 text-gray-300 rounded-xl font-semibold shadow-lg hover:bg-gray-600 transition-colors duration-200">
+                    <button id="backToBillBtn" class="w-full sm:w-1/3 flex justify-center items-center px-4 py-3 bg-gray-300 text-gray-800 flat-btn font-semibold hover:bg-gray-400 transition-colors duration-200">
                         ${getIcon('ReceiptText')} Back to Bill
                     </button>
                 </div>
@@ -321,31 +377,53 @@
                 return;
             }
             
-            modalContainer.innerHTML = `
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
-                    <div class="bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-sm border border-gray-700">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-semibold text-white">Who Paid?</h3>
-                            <button id="closeModalBtn" class="text-gray-400 hover:text-white transition-colors">
-                                ${getIcon('X')}
-                            </button>
-                        </div>
-                        <p class="text-gray-400 mb-4">Please select the person who paid for the bill.</p>
-                        <div id="payerButtons" class="flex flex-wrap gap-2 justify-center">
-                            ${people.map(person => `
-                                <button data-id="${person.id}" class="payer-btn px-4 py-2 text-sm rounded-full transition-colors duration-200 ${paidBy === person.id ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">
-                                    ${person.name}
+            let modalHtml = '';
+            if (modalType === 'selectPayer') {
+                modalHtml = `
+                    <div class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white p-6 flat-card w-full max-w-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Who Paid?</h3>
+                                <button id="closeModalBtn" class="text-gray-600 hover:text-gray-800 transition-colors">
+                                    ${getIcon('X')}
                                 </button>
-                            `).join('')}
-                        </div>
-                        <div id="confirmButtonContainer" class="mt-6 flex justify-center ${!paidBy ? 'hidden' : ''}">
-                            <button id="confirmPayerBtn" class="px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold shadow-lg hover:bg-teal-700 transition-colors duration-200">
-                                Confirm
-                            </button>
+                            </div>
+                            <p class="text-gray-600 mb-4">Please select the person who paid for the bill.</p>
+                            <div id="payerButtons" class="flex flex-wrap gap-2 justify-center">
+                                ${people.map(person => `
+                                    <button data-id="${person.id}" class="payer-btn px-4 py-2 text-sm flat-btn transition-colors duration-200 ${paidBy === person.id ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}">
+                                        ${person.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <div id="confirmButtonContainer" class="mt-6 flex justify-center ${!paidBy ? 'hidden' : ''}">
+                                <button id="confirmPayerBtn" class="px-6 py-3 bg-blue-600 text-white flat-btn font-semibold hover:bg-blue-700 transition-colors duration-200">
+                                    Confirm
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else if (modalType === 'confirmReset') {
+                modalHtml = `
+                    <div class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white p-6 flat-card w-full max-w-sm text-center">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Are you sure?</h3>
+                            <p class="text-gray-600 mb-6">This will clear all bill items and details.</p>
+                            <div class="flex justify-center gap-4">
+                                <button id="cancelResetBtn" class="px-6 py-3 bg-gray-300 text-gray-800 flat-btn font-semibold hover:bg-gray-400 transition-colors duration-200">
+                                    Cancel
+                                </button>
+                                <button id="confirmResetBtn" class="px-6 py-3 bg-red-600 text-white flat-btn font-semibold hover:bg-red-700 transition-colors duration-200">
+                                    Clear Bill
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            modalContainer.innerHTML = modalHtml;
             attachModalEvents();
         };
 
@@ -361,7 +439,7 @@
             const iconName = message.type === 'success' ? 'CheckCircle' : 'X';
             
             messageContainer.innerHTML = `
-                <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center px-6 py-3 rounded-xl shadow-lg text-white transition-all duration-300 transform animate-slide-up z-50 ${bgColor}">
+                <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center px-6 py-3 flat-btn text-white transition-all duration-300 transform animate-slide-up z-50 ${bgColor}">
                     ${getIcon(iconName)}
                     <span class="ml-2">${message.text}</span>
                 </div>
@@ -390,9 +468,9 @@
             }
         };
 
-        const removeItem = (itemId) => {
-            items = items.filter(item => item.id !== itemId);
-            showMessage('Item removed.');
+        const removeItem = (id) => {
+            items = items.filter(item => item.id !== id);
+            showMessage('Item removed!', 'success');
             renderApp();
         };
 
@@ -400,7 +478,7 @@
             const totalSubtotal = items.reduce((sum, item) => sum + item.cost, 0);
             const calculatedTotalGst = isGstEnabled ? totalSubtotal * (GST_RATE / 100) : 0;
             const calculatedTotalOtherCharges = parseFloat(otherCharges) || 0;
-            const calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
+            calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
 
             if (Math.abs(calculatedGrandTotal - parseFloat(actualPaidTotal)) > 0.01) {
                 showMessage('Entered bill details are incorrect. Please re-check the items and totals.', 'error');
@@ -453,6 +531,50 @@
             currentScreen = 'report';
             renderApp();
         };
+        
+        const saveBillData = async () => {
+            if (GOOGLE_SCRIPT_URL === "YOUR_DEPLOYED_URL_GOES_HERE") {
+                showMessage("Please deploy the Google Script and paste the URL.", "error");
+                return;
+            }
+
+            showMessage("Saving bill...", "success");
+
+            const dataToSend = {
+                billNumber,
+                billDate,
+                vendorName,
+                actualPaidTotal,
+                calculatedGrandTotal,
+                payerName,
+                isGstEnabled,
+                otherCharges,
+                items,
+                people
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dataToSend),
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showMessage("Bill saved successfully!", "success");
+                } else {
+                    showMessage(`Failed to save: ${result.error}`, "error");
+                }
+            } catch (error) {
+                console.error('Error saving bill:', error);
+                showMessage("An error occurred while saving the bill.", "error");
+            }
+        };
 
         // --- Event Listener Attachment ---
 
@@ -480,6 +602,11 @@
                 renderModal();
             });
 
+            document.getElementById('resetBillBtn').addEventListener('click', () => {
+                modalType = 'confirmReset';
+                renderModal();
+            });
+
             document.getElementById('toggleGst').addEventListener('click', () => {
                 isGstEnabled = !isGstEnabled;
                 renderApp();
@@ -492,12 +619,13 @@
             document.getElementById('personSelect').addEventListener('change', (e) => {
                 selectedPersonId = e.target.value;
             });
-
-            document.querySelectorAll('.remove-item-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const itemId = e.currentTarget.getAttribute('data-item-id');
+            
+            document.getElementById('itemsContainer').addEventListener('click', (e) => {
+                const button = e.target.closest('.remove-item-btn');
+                if (button) {
+                    const itemId = button.getAttribute('data-id');
                     removeItem(itemId);
-                });
+                }
             });
         };
 
@@ -513,30 +641,54 @@
                     window.print();
                 }, 500);
             });
+            
+            document.getElementById('saveBillBtn').addEventListener('click', saveBillData);
         };
 
         const attachModalEvents = () => {
-            document.getElementById('closeModalBtn').addEventListener('click', () => {
-                modalType = null;
-                renderModal();
-            });
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => {
+                    modalType = null;
+                    renderModal();
+                });
+            }
 
-            document.getElementById('payerButtons').addEventListener('click', (e) => {
-                const button = e.target.closest('.payer-btn');
-                if (button) {
-                    const newPaidBy = button.getAttribute('data-id');
-                    if (paidBy !== newPaidBy) {
-                        paidBy = newPaidBy;
-                    } else {
-                        paidBy = ''; // Deselect
+            const confirmResetBtn = document.getElementById('confirmResetBtn');
+            if (confirmResetBtn) {
+                confirmResetBtn.addEventListener('click', () => {
+                    modalType = null;
+                    resetApp();
+                });
+            }
+
+            const cancelResetBtn = document.getElementById('cancelResetBtn');
+            if (cancelResetBtn) {
+                cancelResetBtn.addEventListener('click', () => {
+                    modalType = null;
+                    renderModal();
+                });
+            }
+
+            const payerButtons = document.getElementById('payerButtons');
+            if (payerButtons) {
+                payerButtons.addEventListener('click', (e) => {
+                    const button = e.target.closest('.payer-btn');
+                    if (button) {
+                        const newPaidBy = button.getAttribute('data-id');
+                        if (paidBy !== newPaidBy) {
+                            paidBy = newPaidBy;
+                        } else {
+                            paidBy = ''; // Deselect
+                        }
+                        renderModal(); // Re-render to update selected button style
                     }
-                    renderModal(); // Re-render to update selected button style
-                }
-            });
+                });
+            }
 
-            const confirmBtn = document.getElementById('confirmPayerBtn');
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', calculateReport);
+            const confirmPayerBtn = document.getElementById('confirmPayerBtn');
+            if (confirmPayerBtn) {
+                confirmPayerBtn.addEventListener('click', calculateReport);
             }
         };
 
