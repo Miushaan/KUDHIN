@@ -1,830 +1,511 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-    <title>KUDHIN SPLIT — Modern</title>
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    <style>
-        :root{
-            --blue: #1e88e5;
-            --blue-100: #eaf5ff;
-            --blue-200: #cfefff;
-            --bg: #f6fbff;
-            --card: #ffffff;
-            --muted: #6b7a8f;
-            --danger: #ef5350;
-            --ok: #43a047;
-            --radius: 14px;
-            --shadow: 0 8px 22px rgba(18,35,68,0.06);
-            --pill-h: 34px;
-            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-        }
-        html,body{height:100%;margin:0;background:var(--bg);color:#122033;-webkit-font-smoothing:antialiased}
-        .app-shell{max-width:420px;margin:8px auto;height:calc(100dvh - 16px);display:flex;flex-direction:column;box-sizing:border-box;padding:8px}
-        header.app-header{
-            height:60px;display:flex;align-items:center;justify-content:space-between;gap:8px;
-            background:linear-gradient(180deg,var(--blue),#1976d2);color:#fff;padding:10px;border-radius:12px;
-            box-shadow:var(--shadow);position:relative;z-index:20;
-        }
-        .profile{display:flex;align-items:center;gap:10px}
-        .avatar{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.12);font-weight:700;font-size:14px}
-        .profile .meta{line-height:1}
-        .profile .meta .name{font-weight:700;font-size:14px}
-        .profile .meta .mobile{font-size:12px;opacity:.9}
-        button.icon-btn{background:transparent;border:none;color:#fff;font-size:22px;padding:6px;border-radius:8px;cursor:pointer}
-        button.icon-btn:active{transform:scale(.98)}
-        .menu-dropdown{position:absolute;right:10px;top:56px;background:#fff;border:1px solid #e8f2ff;border-radius:10px;box-shadow:0 10px 30px rgba(6,16,35,.15);display:none;overflow:hidden;min-width:160px}
-        .menu-dropdown button{display:block;width:100%;background:#fff;border:none;text-align:left;padding:10px 12px;font-weight:600;cursor:pointer}
-        .menu-dropdown button:hover{background:#f6fbff}
-        main.app-main{flex:1;overflow:auto;padding:12px 0;}
-        .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(20,40,80,0.04)}
-        .row{display:flex;gap:8px;align-items:center}
-        .small{font-size:12px;color:var(--muted)}
-        input,select,button{font-family:inherit}
-        input[type=text],input[type=number],select{width:100%;padding:10px;border-radius:10px;border:1px solid #e6f0fb;background:transparent;box-sizing:border-box;font-size:14px}
-        .btn{height:34px;border-radius:10px;padding:0 12px;border:none;cursor:pointer;font-weight:600}
-        .btn-primary{background:var(--blue);color:#fff}
-        .btn-ghost{background:transparent;border:1px solid rgba(18,40,70,0.08);color:#122033}
-        .btn-danger{background:var(--danger);color:#fff}
-        .btn-ok{background:var(--ok);color:#fff}
-        .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:var(--blue-200);height:var(--pill-h);border:1px solid rgba(18,40,70,0.06);cursor:pointer;user-select:none}
-        .pill .dot{width:14px;height:14px;border-radius:50%;background:#fff;display:inline-block;box-shadow:0 1px 2px rgba(0,0,0,0.08)}
-        .pill.active{background:linear-gradient(90deg,var(--ok),#2e8b57);color:#fff}
-        .table-wrap{overflow:hidden;border-radius:10px;border:1px solid #eef7ff}
-        table{width:100%;border-collapse:collapse;font-size:14px}
-        th,td{padding:10px;text-align:left}
-        thead th{color:var(--muted);font-weight:700;border-bottom:1px solid #f3fbff}
-        tbody tr:nth-child(odd){background:#fbfdff}
-        .tag{display:inline-block;padding:6px 8px;border-radius:999px;background:#f1fbff;border:1px solid #e2f2ff;font-size:12px}
-        .list-row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;border:1px solid #f0f7ff;margin-bottom:8px}
-        .list-row .title{font-weight:700}
-        .list-row .meta{font-size:12px;color:var(--muted)}
-        .list-actions{margin-left:auto;display:flex;gap:8px}
-        .remove-sm{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:6px;border-radius:8px;color:var(--danger);font-weight:700;cursor:pointer}
-        nav.app-nav{display:flex;gap:8px;justify-content:space-between;background:linear-gradient(180deg,var(--blue-100),#d6eefc);padding:8px;border-radius:12px;position:sticky;bottom:0;margin-top:8px}
-        nav.app-nav button{flex:1;border-radius:10px;padding:10px;border:none;background:transparent;color:#034a7a;font-weight:700}
-        nav.app-nav button.active{background:#fff;color:var(--blue);box-shadow:0 6px 16px rgba(30,120,210,0.12)}
-        .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,8,23,0.45);z-index:80;padding:18px}
-        .modal.open{display:flex}
-        .panel{width:min(420px,100%);background:var(--card);border-radius:14px;padding:14px;box-shadow:0 18px 40px rgba(6,16,35,0.2)}
-        .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-        .owings-grid{display:grid;grid-template-columns:1fr;gap:10px}
-        .owing-card{display:flex;flex-direction:column;padding:12px;border-radius:12px;border:1px solid #eef7ff;background:linear-gradient(180deg,#fff,#fbfdff)}
-        .owing-top{display:flex;align-items:center;gap:8px}
-        .status{padding:6px 8px;border-radius:999px;font-weight:700;font-size:12px}
-        .status.UNPAID{background:#fff0f0;color:#b00000;border:1px solid rgba(239,83,80,0.1)}
-        .status.PAID{background:#fff8e6;color:#a97a00;border:1px solid rgba(255,193,7,0.08)}
-        .status.RECEIVED{background:#eaf9ef;color:#1b8a57;border:1px solid rgba(76,175,80,0.08)}
-        @media (min-width:520px){
-            .app-shell{box-shadow:0 12px 36px rgba(6,16,35,0.06);border-radius:18px;padding:16px}
-        }
-        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 100; max-width: 300px; }
-        .toast { padding: 1rem; margin-bottom: 0.5rem; background-color: #333; color: white; border-radius: 0.5rem; }
-    </style>
-</head>
-<body>
+import { useState, useRef, useEffect } from 'react';
+import { X, ReceiptText, CheckCircle, ArrowRight, ArrowLeft, Printer } from 'lucide-react';
 
-<div class="app-shell" id="appShell">
+const initialPeople = [
+  { id: 'miu', name: 'Miu', group: 'Miu & Raya', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'raya', name: 'Raya', group: 'Miu & Raya', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'aslan', name: 'Aslan', group: 'Aslan & Reesha', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'reesha', name: 'Reesha', group: 'Aslan & Reesha', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'appal', name: 'Appal', group: 'Appal & Uly', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'uly', name: 'Uly', group: 'Appal & Uly', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+  { id: 'irufaan', name: 'Irufaan', group: 'Irufaan', owes: 0, paid: 0, balance: 0, breakdown: { items: 0, gst: 0, otherCharges: 0 } },
+];
 
-    <div id="loginScreen">
-        <div class="card">
-            <div style="font-weight:800;font-size:18px">KUDHIN SPLIT</div>
-            <div class="small" style="margin-top:4px">Simple, modern bill splitter</div>
+// Define a fixed GST rate
+const GST_RATE = 8;
+
+const App = () => {
+  const [people, setPeople] = useState(initialPeople);
+  const [items, setItems] = useState([]);
+  const [isGstEnabled, setIsGstEnabled] = useState(false);
+  const [otherCharges, setOtherCharges] = useState('');
+  const [paidBy, setPaidBy] = useState('');
+  const [currentScreen, setCurrentScreen] = useState('main');
+  const [modalType, setModalType] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [billNumber, setBillNumber] = useState('');
+  const [billCounter, setBillCounter] = useState(1);
+  const [selectedPersonId, setSelectedPersonId] = useState(initialPeople[0].id);
+  const [billDate, setBillDate] = useState('');
+  const [vendorName, setVendorName] = useState('');
+  const [actualPaidTotal, setActualPaidTotal] = useState('');
+
+  const newItemNameRef = useRef(null);
+  const newItemCostRef = useRef(null);
+
+  // Set initial focus on the item name input when the component mounts
+  useEffect(() => {
+    if (newItemNameRef.current) {
+      newItemNameRef.current.focus();
+    }
+  }, []);
+
+  // Helper function to capitalize the first letter of each word
+  const capitalizeWords = (str) => {
+    if (!str) return '';
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const showMessage = (text, type = 'success') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const addItemForPerson = (e) => {
+    e.preventDefault();
+    const name = capitalizeWords(newItemNameRef.current.value.trim());
+    const cost = parseFloat(newItemCostRef.current.value);
+    if (name && !isNaN(cost) && cost > 0) {
+      setItems([...items, { id: crypto.randomUUID(), name, cost, assignedTo: selectedPersonId }]);
+      newItemNameRef.current.value = '';
+      newItemCostRef.current.value = '';
+      newItemNameRef.current.focus(); // Focus back to item name after adding
+      showMessage(`${name} added!`);
+    }
+  };
+
+  const removeItem = (itemId) => {
+    setItems(items.filter(item => item.id !== itemId));
+    showMessage('Item removed.');
+  };
+
+  const handleGenerateReportClick = () => {
+    if (items.length === 0) {
+      showMessage('Please add at least one bill item.', 'error');
+      return;
+    }
+    setModalType('selectPayer');
+  };
+
+  const calculateReport = () => {
+    const totalSubtotal = items.reduce((sum, item) => sum + item.cost, 0);
+    const calculatedTotalGst = isGstEnabled ? totalSubtotal * (GST_RATE / 100) : 0;
+    const calculatedTotalOtherCharges = parseFloat(otherCharges) || 0;
+    const calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
+
+    // Validation check: If the calculated total doesn't match the actual total paid
+    if (Math.abs(calculatedGrandTotal - parseFloat(actualPaidTotal)) > 0.01) {
+      showMessage('Entered bill details are incorrect. Please re-check the items and totals.', 'error');
+      return;
+    }
+
+    const newPeople = people.map(p => ({
+      ...p,
+      owes: 0,
+      paid: 0,
+      balance: 0,
+      breakdown: {
+        items: 0,
+        gst: 0,
+        otherCharges: 0,
+        total: 0,
+      },
+    }));
+
+    const actualGstPercentage = isGstEnabled ? GST_RATE : 0;
+
+    items.forEach(item => {
+      const person = newPeople.find(p => p.id === item.assignedTo);
+      if (person) {
+        person.breakdown.items += item.cost;
+      }
+    });
+
+    const peopleWithItems = newPeople.filter(p => p.breakdown.items > 0);
+    const totalOtherCharges = parseFloat(otherCharges) || 0;
+    const equalOtherChargeShare = peopleWithItems.length > 0 ? totalOtherCharges / peopleWithItems.length : 0;
+
+    newPeople.forEach(person => {
+      if (person.breakdown.items > 0) {
+        const gstAmount = person.breakdown.items * (actualGstPercentage / 100);
+        person.breakdown.gst = gstAmount;
+        person.breakdown.otherCharges = equalOtherChargeShare;
+        person.owes = person.breakdown.items + gstAmount + equalOtherChargeShare;
+      }
+    });
+
+    // The grand total is now the actual total paid by the user
+    const grandTotal = parseFloat(actualPaidTotal) || 0;
+
+    const payer = newPeople.find(p => p.id === paidBy);
+    if (payer) {
+      payer.paid = grandTotal;
+      newPeople.forEach(person => {
+        person.balance = person.paid - person.owes;
+      });
+    }
+
+    setPeople(newPeople);
+    setBillNumber(String(billCounter).padStart(6, '0'));
+    setBillCounter(billCounter + 1);
+    setModalType(null);
+    setCurrentScreen('report');
+  };
+
+  const handlePrint = () => {
+    showMessage('Preparing bill for printing...');
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
+
+  const renderMainScreen = () => {
+    const itemsByPerson = items.reduce((acc, item) => {
+      acc[item.assignedTo] = acc[item.assignedTo] || [];
+      acc[item.assignedTo].push(item);
+      return acc;
+    }, {});
+
+    return (
+      <div className="p-6 space-y-6">
+        <h2 className="text-2xl font-bold text-center text-white">Add Bill Items</h2>
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
+          <h3 className="text-xl font-bold text-teal-400">Bill Details</h3>
+          <input
+            type="date"
+            value={billDate}
+            onChange={(e) => setBillDate(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            required
+          />
+          <input
+            type="text"
+            value={vendorName}
+            onChange={(e) => setVendorName(e.target.value)}
+            placeholder="Vendor Name"
+            className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            required
+          />
+          <input
+            type="number"
+            value={actualPaidTotal}
+            onChange={(e) => setActualPaidTotal(e.target.value)}
+            placeholder="Actual Paid Total (MVR)"
+            step="0.01"
+            min="0.01"
+            className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            required
+          />
         </div>
 
-        <div class="card">
-            <div style="font-weight:700;margin-bottom:8px">Login</div>
-            <label class="small">Select user</label>
-            <select id="loginSelect" style="margin-bottom:8px"></select>
-            <label class="small">Mobile (as password)</label>
-            <input id="loginMobile" type="text" placeholder="MOBILE NUMBER" />
-            <div style="display:flex;gap:8px;margin-top:10px">
-                <button class="btn btn-primary" style="flex:1" onclick="login()">LOGIN</button>
-            </div>
-            <div class="small" style="margin-top:8px;color:var(--muted)">Choose a user and enter the correct mobile to continue.</div>
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
+          <h3 className="text-xl font-bold text-teal-400">Add New Item</h3>
+          <form onSubmit={addItemForPerson} className="space-y-4">
+            <label className="text-gray-400">Who is this item for?</label>
+            <select
+              value={selectedPersonId}
+              onChange={(e) => setSelectedPersonId(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              {people.map(person => (
+                <option key={person.id} value={person.id}>{person.name}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              ref={newItemNameRef}
+              placeholder="Item Name"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  newItemCostRef.current.focus();
+                }
+              }}
+              className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              required
+            />
+            <input
+              type="number"
+              ref={newItemCostRef}
+              placeholder="Item Cost (MVR)"
+              step="0.01"
+              min="0.01"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addItemForPerson(e);
+                }
+              }}
+              className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold shadow-lg hover:bg-teal-700 transition-colors duration-200"
+            >
+              Add Item
+            </button>
+          </form>
         </div>
-    </div>
 
-    <div id="app" style="display:none;flex-direction:column;height:100%">
+        <h2 className="text-2xl font-bold text-center text-white mt-8">Current Bill Items</h2>
+        <div className="flex flex-col gap-4">
+          {Object.keys(itemsByPerson).length === 0 ? (
+            <p className="text-gray-400 text-center w-full">No items added yet.</p>
+          ) : (
+            people.map(person => {
+              const personItems = itemsByPerson[person.id];
+              if (!personItems || personItems.length === 0) return null;
 
-        <header class="app-header">
-            <div class="profile">
-                <div class="avatar" id="avatarInitial">K</div>
-                <div class="meta">
-                    <div id="profileName" class="name">-</div>
-                    <div id="profileMobile" class="mobile small">-</div>
-                </div>
-            </div>
-            <div style="position:relative">
-                <button id="hamburger" class="icon-btn" title="Menu">☰</button>
-                <div id="menuDropdown" class="menu-dropdown">
-                    <button onclick="switchTab('settings', true)">Settings</button>
-                    <button onclick="signOut()">Sign Out</button>
-                </div>
-            </div>
-        </header>
-
-        <main class="app-main">
-            <section id="tab-splitter" class="card">
-                <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px">
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <button class="btn btn-primary" onclick="startAddPerson()">+ Add Person</button>
-                        <button class="btn btn-primary" onclick="openSharedPopup()">+ Shared Item</button>
-                    </div>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <div id="gstToggle" class="pill" onclick="toggleGST()" title="Toggle GST 8%">
-                            <div class="dot"></div><div style="font-weight:700">GST 8%</div>
+              return (
+                <div key={person.id} className="bg-gray-800 p-4 rounded-xl shadow-lg">
+                  <h3 className="text-lg font-bold text-teal-400 mb-2">{person.name}</h3>
+                  <div className="flex flex-col gap-2">
+                    {personItems.map(item => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <p className="text-lg font-semibold text-white">{item.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-lg font-bold text-white">
+                            MVR{item.cost.toFixed(2)}
+                          </p>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="text-red-400 hover:text-red-500 transition-colors"
+                          >
+                            <X size={18} />
+                          </button>
                         </div>
-                        <button class="btn btn-ok" onclick="openPreview()">Preview</button>
-                    </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                <div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap">
-                    <div style="flex:1;min-width:150px">
-                        <label class="small">Bill date</label>
-                        <input id="billDate" type="date" />
-                    </div>
-                    <div style="flex:1;min-width:150px">
-                        <label class="small">Payer</label>
-                        <select id="payerSelect"></select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom:10px">
-                    <label class="small">Vendor</label>
-                    <select id="vendorSelect"></select>
-                </div>
-
-                <div style="margin-bottom:10px">
-                    <label class="small">Manual Service (Amount) — split <strong>equally</strong></label>
-                    <input id="manualService" type="number" placeholder="0.00" />
-                </div>
-
-                <div style="margin-top:6px">
-                    <div style="font-weight:700;margin-bottom:8px">Persons</div>
-                    <div id="personsList"></div>
-                    <div class="small" id="noPersonsHint" style="display:block;color:var(--muted)">No persons yet — add a person to begin.</div>
-                </div>
-
-                <div style="margin-top:12px">
-                    <div style="font-weight:700;margin-bottom:8px">Shared Items</div>
-                    <div id="sharedList"></div>
-                    <div class="small" id="noSharedHint" style="display:block;color:var(--muted)">No shared items — add shared items here.</div>
-                </div>
-            </section>
-
-            <section id="tab-owings" class="card" style="display:none">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                    <div style="font-weight:700">Owings & Settlements</div>
-                    <div class="small" style="color:var(--muted)">Track who owes whom</div>
-                </div>
-                <div id="owingsArea" class="owings-grid"></div>
-            </section>
-
-            <section id="tab-settings" class="card" style="display:none">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                    <div>
-                        <div style="font-weight:800">Users</div>
-                        <div class="small" style="color:var(--muted)">Fixed users for login & payer selection</div>
-                    </div>
-                </div>
-
-                <div style="margin-top:8px" id="userListArea"></div>
-
-                <div style="margin-top:12px">
-                    <div style="font-weight:700">Add Vendor</div>
-                    <div style="display:flex;gap:8px;margin-top:8px">
-                        <input id="newVendor" type="text" placeholder="Vendor name" />
-                        <button class="btn btn-primary" onclick="addVendor()">Add</button>
-                    </div>
-                    <div id="vendorList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px"></div>
-                </div>
-
-                <div style="margin-top:14px;display:flex;gap:8px">
-                    <button class="btn btn-ghost" onclick="exportData()">Export JSON</button>
-                    <button class="btn btn-ghost" onclick="clearAll()">Clear All</button>
-                </div>
-            </section>
-        </main>
-
-        <nav class="app-nav">
-            <button id="nav-splitter" class="active" onclick="switchTab('splitter')">Splitter</button>
-            <button id="nav-owings" onclick="switchTab('owings')">Owings</button>
-        </nav>
-
-    </div>
-</div>
-
-<div id="modal" class="modal" aria-modal="true" role="dialog">
-    <div class="panel">
-        <h3 id="modal-title" style="margin:0 0 8px 0;font-size:16px">Title</h3>
-        <div id="modal-body"></div>
-        <div class="actions">
-            <button id="modal-cancel" class="btn btn-ghost" onclick="closeModal()">CANCEL</button>
-            <button id="modal-primary" class="btn btn-primary">NEXT</button>
+              );
+            })
+          )}
         </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-1 flex items-center gap-2 w-full">
+              <button
+                  onClick={() => setIsGstEnabled(!isGstEnabled)}
+                  className={`w-full flex-1 flex items-center justify-center px-4 py-3 rounded-xl font-semibold shadow-lg transition-colors duration-200 ${
+                    isGstEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+              >
+                  {isGstEnabled ? `GST Enabled (${GST_RATE}%)` : 'Enable GST'}
+              </button>
+          </div>
+          <div className="flex-1 flex items-center gap-2 w-full">
+              <label className="text-gray-400 whitespace-nowrap">Other Charges</label>
+              <input
+                type="number"
+                value={otherCharges}
+                onChange={(e) => setOtherCharges(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            onClick={handleGenerateReportClick}
+            className="mt-4 px-8 py-4 bg-purple-600 text-white rounded-xl font-bold text-lg shadow-xl hover:bg-purple-700 transition-colors duration-200"
+          >
+            Generate Bill
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReportScreen = () => {
+    const peopleWithItems = people.filter(p => p.breakdown.items > 0);
+    const totalSubtotal = items.reduce((sum, item) => sum + item.cost, 0);
+    const calculatedTotalGst = isGstEnabled ? totalSubtotal * (GST_RATE / 100) : 0;
+    const calculatedTotalOtherCharges = parseFloat(otherCharges) || 0;
+    const calculatedGrandTotal = totalSubtotal + calculatedTotalGst + calculatedTotalOtherCharges;
+
+    const payerName = people.find(p => p.id === paidBy)?.name || 'Nobody';
+    const payerGroup = people.find(p => p.id === paidBy)?.group;
+
+    const groupOwes = peopleWithItems.reduce((acc, person) => {
+      acc[person.group] = (acc[person.group] || 0) + person.owes;
+      return acc;
+    }, {});
+
+    const groupsToPay = Object.entries(groupOwes)
+      .filter(([groupName]) => groupName !== payerGroup)
+      .map(([groupName, amount]) => ({
+        name: groupName,
+        owes: amount,
+      }));
+
+    const getItemsForPerson = (personId) => items.filter(item => item.assignedTo === personId);
+
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-3">
+          <p className="text-xs text-gray-400 text-center">Bill Number: {billNumber}</p>
+          <h2 className="text-2xl font-bold text-center text-white">Bill Report</h2>
+          <div className="flex justify-between text-gray-400">
+            <span>Vendor:</span>
+            <span className="font-semibold text-white">{capitalizeWords(vendorName)}</span>
+          </div>
+          <div className="flex justify-between text-gray-400">
+            <span>Date:</span>
+            <span className="font-semibold text-white">{billDate}</span>
+          </div>
+          <hr className="border-gray-700 my-2" />
+          <div className="flex justify-between text-lg font-bold text-white">
+            <span>Actual Paid Total:</span>
+            <span>MVR{parseFloat(actualPaidTotal).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-semibold text-gray-400">
+            <span>Calculated Total:</span>
+            <span>MVR{calculatedGrandTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg space-y-4">
+            <h3 className="text-xl font-semibold text-white">Individual Breakdown</h3>
+            {peopleWithItems.length === 0 ? (
+                <p className="text-gray-400">No one has items on the bill.</p>
+            ) : (
+                peopleWithItems.map(person => (
+                    <div key={person.id} className="p-4 rounded-xl bg-gray-700 shadow-md">
+                        <p className="font-bold text-lg text-teal-400 mb-2">{person.name}</p>
+                        <div className="mb-2">
+                           {getItemsForPerson(person.id).map(item => (
+                             <div key={item.id} className="flex justify-between text-sm text-gray-300">
+                               <span> - {item.name}:</span>
+                               <span>MVR{item.cost.toFixed(2)}</span>
+                             </div>
+                           ))}
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-300">
+                            <span>GST:</span>
+                            <span>MVR{person.breakdown.gst.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-300">
+                            <span>Other Charges:</span>
+                            <span>MVR{person.breakdown.otherCharges.toFixed(2)}</span>
+                        </div>
+                        <hr className="my-2 border-gray-600" />
+                        <div className="flex justify-between text-sm font-semibold text-white">
+                            <span>Total Share:</span>
+                            <span>MVR{person.owes.toFixed(2)}</span>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+            <h3 className="text-xl font-semibold text-white mb-4">Who Paid, Who Owes</h3>
+            <div className="flex items-center text-white font-bold mb-2">
+                <span className="mr-2">Total bill paid by:</span>
+                <span className="font-bold text-white">{payerName}</span>
+            </div>
+            {groupsToPay.length === 0 ? (
+                 <p className="text-gray-400">Add items to generate a report.</p>
+            ) : (
+                groupsToPay.map(group => (
+                    <div key={group.name} className="flex justify-between items-center py-2 border-t border-gray-700 first:border-t-0">
+                        <span className="text-lg font-semibold text-white">{group.name}</span>
+                        <span className="flex items-center text-red-400 font-bold">
+                            <ArrowRight size={16} className="mr-1" />
+                            Owes MVR{group.owes.toFixed(2)}
+                        </span>
+                    </div>
+                ))
+            )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <button
+            onClick={handlePrint}
+            className="w-full flex justify-center items-center px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <Printer size={20} className="mr-2" /> Print Bill
+          </button>
+          <button
+            onClick={() => setCurrentScreen('main')}
+            className="w-full flex justify-center items-center px-4 py-3 bg-gray-700 text-gray-300 rounded-xl font-semibold shadow-lg hover:bg-gray-600 transition-colors duration-200"
+          >
+            <ReceiptText size={20} className="mr-2" /> Back to Bill
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderModal = () => {
+    if (!modalType) return null;
+    const isSelectingPayer = modalType === 'selectPayer';
+
+    return (
+      <div className="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div className="bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-sm border border-gray-700">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-white">
+              Who Paid?
+            </h3>
+            <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          {isSelectingPayer ? (
+            <>
+              <p className="text-gray-400 mb-4">Please select the person who paid for the bill.</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {people.map(person => (
+                  <button
+                    key={person.id}
+                    onClick={() => {
+                      setPaidBy(person.id);
+                    }}
+                    className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                      paidBy === person.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {person.name}
+                  </button>
+                ))}
+              </div>
+              {paidBy && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={calculateReport}
+                    className="px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold shadow-lg hover:bg-teal-700 transition-colors duration-200"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMessage = () => {
+    if (!message) return null;
+    const bgColor = message.type === 'success' ? 'bg-green-600' : 'bg-red-600';
+    const Icon = message.type === 'success' ? CheckCircle : X;
+
+    return (
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center px-6 py-3 rounded-xl shadow-lg text-white transition-all duration-300 transform animate-slide-up z-50 ${bgColor}`}>
+        <Icon size={20} className="mr-2" />
+        <span>{message.text}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 font-sans">
+      <div className="container mx-auto max-w-lg p-4">
+        <h1 className="text-4xl font-extrabold text-center text-white mb-8">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-500">Bill Splitter</span>
+        </h1>
+        {currentScreen === 'main' ? renderMainScreen() : renderReportScreen()}
+        {renderModal()}
+        {renderMessage()}
+      </div>
     </div>
-</div>
+  );
+};
 
-<div id="toastContainer" class="toast-container"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, collection, addDoc, deleteDoc, updateDoc, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    /* ===== storage keys & defaults ===== */
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Initial hardcoded users - these will be saved to a Firestore collection on first run.
-    let users = [];
-    const defaultUsers = [
-        {name:"MIUSHAAN", mobile:"9996912", id: 'miushaan-uid'},
-        {name:"RAYA", mobile:"9996912", id: 'raya-uid'},
-        {name:"ASLAN", mobile:"9996912", id: 'aslan-uid'},
-        {name:"REESHA", mobile:"9996912", id: 'reesha-uid'},
-        {name:"ZIPPE", mobile:"9996912", id: 'zippe-uid'},
-        {name:"AFU", mobile:"9996912", id: 'afu-uid'},
-        {name:"APPAL", mobile:"9996912", id: 'appal-uid'},
-        {name:"IRUFAAN", mobile:"9996912", id: 'irufaan-uid'},
-        {name:"ULY", mobile:"9996912", id: 'uly-uid'}
-    ];
-
-    let vendors = [];
-    let owings = [];
-    let bills = [];
-    
-    // The main bill state is now an object stored in a single document
-    let currentBill = {
-        persons: [],
-        sharedItems: [],
-        gstEnabled: false,
-        billDate: '',
-        payer: '',
-        vendor: '',
-        manualService: 0
-    };
-    
-    let billCounter = 0;
-    
-    let currentUser = null;
-    let currentBillId = 'main_bill_state'; // A fixed ID for the current working bill
-
-    /* helpers */
-    const el = s => document.querySelector(s);
-    const toUpper = v => (v||"").toString().toUpperCase();
-    const showModal = ()=> el('#modal').classList.add('open');
-    const hideModal = ()=> el('#modal').classList.remove('open');
-    const round2 = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
-    const f2 = n => round2(n).toFixed(2);
-    
-    const showToast = (title, message) => {
-        const toastContainer = el('#toastContainer');
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<strong>${title}</strong><br>${message}`;
-        toastContainer.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    };
-
-    /* ===== LOGIN ===== */
-    // The "login" now just sets the active user in the UI, it doesn't handle Firebase Auth.
-    function updateLoginSelect(){
-        el('#loginSelect').innerHTML = `<option value="">-- SELECT USER --</option>` + users.map((u,i)=>`<option value="${u.name}">${u.name}</option>`).join('');
-    }
-    
-    function login(){
-        const selectedUserName = el('#loginSelect').value;
-        const mobile = toUpper(el('#loginMobile').value).trim();
-        const selectedUser = users.find(u => u.name === selectedUserName);
-
-        if(selectedUser && toUpper(selectedUser.mobile) === mobile){
-            currentUser = selectedUser;
-            el('#profileName').textContent = currentUser.name;
-            el('#profileMobile').textContent = currentUser.mobile;
-            el('#avatarInitial').textContent = currentUser.name.slice(0,1) || 'K';
-            el('#loginScreen').style.display = 'none';
-            el('#app').style.display = 'flex';
-            updatePayerSelect();
-            el('#payerSelect').value = currentUser.name;
-        } else {
-            showToast('Invalid Credentials', 'Please select a user and enter the correct mobile number.');
-        }
-    }
-    
-    function signOut(){
-        currentBill = { persons: [], sharedItems: [], gstEnabled: false, billDate: '', payer: '', vendor: '', manualService: 0 };
-        // Reset header
-        el('#profileName').textContent = '-'; el('#profileMobile').textContent='-'; el('#avatarInitial').textContent='K';
-        el('#app').style.display='none'; el('#loginScreen').style.display='block';
-        el('#menuDropdown').style.display='none';
-        el('#loginMobile').value=''; el('#loginSelect').value='';
-        // Reloads the app state from Firestore
-        renderPersons(currentBill.persons);
-        renderShared(currentBill.sharedItems);
-        renderOwings(owings);
-    }
-    
-    function switchTab(tab, fromMenu=false){
-        ['splitter','owings','settings'].forEach(t=> el(`#tab-${t}`).style.display='none');
-        el(`#tab-${tab}`).style.display='block';
-        document.querySelectorAll('nav.app-nav button').forEach(b=>b.classList.remove('active'));
-        if(tab==='splitter') el('#nav-splitter').classList.add('active');
-        if(tab==='owings') el('#nav-owings').classList.add('active');
-    }
-    
-    function openSettings(){ switchTab('settings', true); el('#menuDropdown').style.display='none'; }
-
-    /* ===== settings & vendors ===== */
-    function renderUsers(usersList){
-        el('#userListArea').innerHTML = usersList.map(u=>`<div style="padding:8px;border-radius:8px;border:1px solid #f0f8ff;margin-bottom:6px">${u.name} <span class="small" style="color:var(--muted)">(${u.mobile})</span></div>`).join('');
-    }
-    
-    async function addVendor(){
-        const v = toUpper(el('#newVendor').value).trim();
-        if(!v) return showToast('Vendor Required', 'Please enter a vendor name.');
-        if(vendors.some(vendor => vendor.name === v)) return showToast('Vendor Exists', 'This vendor already exists.');
-        
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/vendors`), { name: v });
-            el('#newVendor').value = '';
-        } catch (e) {
-            console.error("Error adding vendor: ", e);
-            showToast('Error', 'Failed to add vendor.');
-        }
-    }
-    
-    function refreshVendorSelect(vendorList){
-        el('#vendorSelect').innerHTML = `<option value="">-- SELECT VENDOR --</option>` + vendorList.map(v=>`<option>${v.name}</option>`).join('');
-    }
-    
-    function refreshVendorList(vendorList){
-        el('#vendorList').innerHTML = vendorList.map(v=>`<div class="tag">${v.name}</div>`).join('');
-    }
-    
-    function updatePayerSelect(usersList){
-        el('#payerSelect').innerHTML = `<option value="">-- SELECT --</option>` + usersList.map(u=>`<option>${u.name}</option>`).join('');
-    }
-
-    /* ===== GST toggle ===== */
-    async function toggleGST(){
-        const gstEnabled = !currentBill.gstEnabled;
-        try {
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/bills`, currentBillId), { gstEnabled });
-        } catch (e) {
-            console.error("Error toggling GST:", e);
-        }
-    }
-
-    /* ===== persons & shared render ===== */
-    function renderPersons(personsList){
-        const wrap = el('#personsList'); wrap.innerHTML = '';
-        el('#noPersonsHint').style.display = personsList.length ? 'none' : 'block';
-        personsList.forEach((p,pi)=>{
-            const c = document.createElement('div'); c.className='list-row';
-            const left = document.createElement('div'); left.innerHTML = `<div class="title">${p.name}</div><div class="meta small">${p.items.length} items • ${f2(p.items.reduce((s,i)=>s+Number(i.amount||0),0))}</div>`;
-            const actions = document.createElement('div'); actions.className='list-actions';
-            const addBtn = document.createElement('button'); addBtn.className='btn btn-ghost'; addBtn.textContent='Add Item'; addBtn.onclick=()=> startAddItemFor(p.name);
-            const rmBtn = document.createElement('button'); rmBtn.className='remove-sm'; rmBtn.textContent='REMOVE'; rmBtn.onclick=()=> {
-                if(confirm('Remove this person?')){
-                    const updatedPersons = [...currentBill.persons];
-                    updatedPersons.splice(pi, 1);
-                    updateBill({ persons: updatedPersons });
-                }
-            };
-            actions.appendChild(addBtn); actions.appendChild(rmBtn);
-            c.appendChild(left); c.appendChild(actions);
-
-            const box = document.createElement('div'); box.style.marginTop='8px';
-            if(p.items.length===0){ box.innerHTML = `<div class="small" style="color:var(--muted)">No items</div>`; }
-            else p.items.forEach((it,ii)=>{
-                const row = document.createElement('div'); row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;margin-top:6px;background:#fbfdff';
-                row.innerHTML = `<div><div style="font-weight:700">${it.item}</div><div class="small" style="color:var(--muted)">${f2(it.amount)}</div></div>`;
-                const rm = document.createElement('button'); rm.className='remove-sm'; rm.textContent='x'; rm.onclick=()=>{
-                    const updatedPersons = [...currentBill.persons];
-                    updatedPersons[pi].items.splice(ii, 1);
-                    updateBill({ persons: updatedPersons });
-                };
-                row.appendChild(rm); box.appendChild(row);
-            });
-
-            wrap.appendChild(c); wrap.appendChild(box);
-        });
-    }
-    
-    function renderShared(sharedItemsList){
-        const wrap = el('#sharedList'); wrap.innerHTML = '';
-        el('#noSharedHint').style.display = sharedItemsList.length ? 'none' : 'block';
-        sharedItemsList.forEach((s,si)=>{
-            const row = document.createElement('div'); row.className='list-row';
-            row.innerHTML = `<div><div class="title">${s.item}</div><div class="meta small">${f2(s.amount)}</div></div>`;
-            const rm = document.createElement('button'); rm.className='remove-sm'; rm.textContent='REMOVE'; rm.onclick=()=>{
-                const updatedSharedItems = [...currentBill.sharedItems];
-                updatedSharedItems.splice(si, 1);
-                updateBill({ sharedItems: updatedSharedItems });
-            };
-            row.appendChild(rm); wrap.appendChild(row);
-        });
-    }
-
-    /* ===== multi-step add ===== */
-    let stepPerson=null, stepItem=null;
-    function startAddPerson(){ stepPerson=null; stepItem=null; showSelectPerson(); }
-    function startAddItemFor(name){ stepPerson=name; stepItem=null; showItemName(); }
-
-    function openModal(title, bodyHTML, primaryText='NEXT', primaryHandler=null){
-        el('#modal-title').textContent = title;
-        el('#modal-body').innerHTML = bodyHTML;
-        const pbtn = el('#modal-primary'); pbtn.textContent = primaryText; pbtn.onclick = primaryHandler || (()=>{});
-        showModal();
-    }
-    function closeModal(){ hideModal(); }
-
-    function showSelectPerson(){
-        const options = users.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
-        openModal('SELECT PERSON', `<select id="selPerson" style="width:100%"><option value="">-- SELECT USER --</option>${options}</select>`, 'NEXT', ()=>{
-            const v = toUpper(document.querySelector('#selPerson').value).trim(); if(!v) return showToast('Error', 'Select a user.'); stepPerson=v; showItemName();
-        });
-    }
-    function showItemName(){
-        openModal(`ADD ITEM FOR ${stepPerson}`, `<input id="itemName" type="text" placeholder="ITEM NAME" />`, 'NEXT', ()=>{
-            const v = toUpper(document.querySelector('#itemName').value).trim(); if(!v) return showToast('Error', 'Enter item name.'); stepItem=v; showItemPrice();
-        });
-    }
-    function showItemPrice(){
-        openModal(`ENTER PRICE FOR ${stepItem}`, `
-            <input id="itemPrice" type="number" placeholder="AMOUNT" />
-            <div style="display:flex;gap:8px;margin-top:8px">
-                <button id="btnMore" class="btn btn-ghost" style="flex:1">Add more items</button>
-                <button id="btnNextPerson" class="btn btn-primary" style="flex:1">Add next person</button>
-            </div>
-        `, 'SAVE', ()=> doAddItem(false));
-        document.querySelector('#btnMore').onclick = ()=> doAddItem(false);
-        document.querySelector('#btnNextPerson').onclick = ()=> doAddItem(true);
-    }
-    async function doAddItem(nextPerson){
-        const price = parseFloat(document.querySelector('#itemPrice').value) || 0;
-        if(!(price>0)) return showToast('Error', 'Enter valid amount.');
-        
-        let updatedPersons = [...currentBill.persons];
-        let p = updatedPersons.find(x=>x.name===stepPerson);
-        if(!p){ p = {name: stepPerson, items:[]}; updatedPersons.push(p); }
-        p.items.push({item: stepItem, amount: price});
-        
-        await updateBill({ persons: updatedPersons });
-
-        if(nextPerson){ stepPerson=null; stepItem=null; showSelectPerson(); }
-        else { stepItem=null; showItemName(); }
-    }
-
-    /* ===== shared popup ===== */
-    function openSharedPopup(){
-        openModal('ADD SHARED ITEM', `<input id="sharedName" type="text" placeholder="ITEM NAME" /><input id="sharedAmt" type="number" placeholder="AMOUNT" style="margin-top:8px" />`, 'ADD', async ()=>{
-            const n = toUpper(document.querySelector('#sharedName').value).trim();
-            const a = parseFloat(document.querySelector('#sharedAmt').value)||0;
-            if(!n) return showToast('Error', 'Enter item name.');
-            if(!(a>0)) return showToast('Error', 'Enter a valid amount.');
-            
-            const updatedSharedItems = [...currentBill.sharedItems, {item:n, amount:a}];
-            await updateBill({ sharedItems: updatedSharedItems });
-            closeModal();
-        });
-    }
-
-    /* ===== Bill state updates ===== */
-    async function updateBill(updates) {
-        try {
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/bills`, currentBillId), updates);
-        } catch (e) {
-            console.error("Error updating bill:", e);
-            showToast('Error', 'Failed to update bill.');
-        }
-    }
-    
-    // Listen for changes to the bill date, payer, vendor, and manual service inputs and update Firestore
-    el('#billDate').addEventListener('change', (e) => updateBill({ billDate: e.target.value }));
-    el('#payerSelect').addEventListener('change', (e) => updateBill({ payer: e.target.value }));
-    el('#vendorSelect').addEventListener('change', (e) => updateBill({ vendor: e.target.value }));
-    el('#manualService').addEventListener('change', (e) => updateBill({ manualService: parseFloat(e.target.value) || 0 }));
-
-    /* ===== totals (manual service split equally; GST on subtotal) ===== */
-    function computeTotalsDetailed(){
-        const peopleCount = currentBill.persons.length || 1;
-        const totalShared = currentBill.sharedItems.reduce((s,it)=>s + Number(it.amount||0), 0);
-        const sharedPerPerson = peopleCount ? (totalShared / peopleCount) : 0;
-        const manualTotal = parseFloat(currentBill.manualService) || 0;
-        const manualPerPerson = peopleCount ? (manualTotal / peopleCount) : 0;
-        
-        const lines = currentBill.persons.map(p=>{
-            const itemsTotal = p.items.reduce((s,it)=>s + Number(it.amount||0), 0);
-            const base = itemsTotal + sharedPerPerson + manualPerPerson;
-            const gst = currentBill.gstEnabled ? (base * 0.08) : 0;
-            const total = base + gst;
-            return {
-                name: p.name,
-                itemsTotal: round2(itemsTotal),
-                sharedShare: round2(sharedPerPerson),
-                manualShare: round2(manualPerPerson),
-                gstShare: round2(gst),
-                total: round2(total)
-            };
-        });
-
-        const grandTotal = round2(lines.reduce((s,l)=>s + l.total, 0));
-        return { lines, grandTotal, sharedPerPerson: round2(sharedPerPerson), manualPerPerson: round2(manualPerPerson) };
-    }
-
-    /* ===== preview & PDF ===== */
-    function openPreview(){
-        if(currentBill.persons.length === 0) return showToast('Error', 'Add at least one person.');
-        if(!currentBill.vendor) return showToast('Error', 'Select a vendor.');
-
-        const { lines, grandTotal, sharedPerPerson, manualPerPerson } = computeTotalsDetailed();
-        const rows = lines.map(l=>`
-            <tr>
-                <td style="font-weight:700">${l.name}</td>
-                <td>
-                    Items: ${f2(l.itemsTotal)}<br/>
-                    Shared: ${f2(l.sharedShare)}<br/>
-                    Manual: ${f2(l.manualShare)}<br/>
-                    GST: ${f2(l.gstShare)}
-                </td>
-                <td style="text-align:right;font-weight:700">${f2(l.total)}</td>
-            </tr>`).join('');
-
-        openModal('PREVIEW BILL', `
-            <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;justify-content:space-between;gap:8px">
-                    <div class="tag">DATE: ${currentBill.billDate || '-'}</div>
-                    <div class="tag">VENDOR: ${currentBill.vendor}</div>
-                </div>
-                <div style="display:flex;justify-content:space-between;gap:8px">
-                    <div class="tag">PAYER: ${currentBill.payer || '-'}</div>
-                    <div class="tag">GST: ${currentBill.gstEnabled? 'ON':'OFF'}</div>
-                </div>
-                <div style="display:flex;justify-content:space-between;gap:8px">
-                    <div class="tag">SHARED / PERS: ${f2(sharedPerPerson)}</div>
-                    <div class="tag">MANUAL / PERS: ${f2(manualPerPerson)}</div>
-                </div>
-
-                <div class="table-wrap" style="margin-top:6px">
-                    <table>
-                        <thead><tr><th>Person</th><th>Breakdown</th><th style="text-align:right">Total</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                        <tfoot><tr><th colspan="2" style="text-align:right">GRAND TOTAL</th><th style="text-align:right">${f2(grandTotal)}</th></tr></tfoot>
-                    </table>
-                </div>
-            </div>
-        `, 'CONFIRM & GENERATE PDF', confirmGenerate);
-    }
-    
-    async function confirmGenerate(){
-        const { lines, grandTotal } = computeTotalsDetailed();
-        const billData = {
-            date: currentBill.billDate,
-            vendor: currentBill.vendor,
-            payer: currentBill.payer,
-            gst: currentBill.gstEnabled,
-            manualService: currentBill.manualService,
-            persons: currentBill.persons,
-            sharedItems: currentBill.sharedItems,
-            createdAt: new Date().toISOString()
-        };
-
-        try {
-            // Add the new bill to the bills collection
-            const billDocRef = await addDoc(collection(db, `artifacts/${appId}/public/data/bills`), billData);
-            const billID = billDocRef.id;
-
-            // Generate owings based on the new bill
-            const owingsToWrite = lines
-                .filter(l => l.name !== currentBill.payer)
-                .map(l => ({
-                    billID: billID,
-                    date: currentBill.billDate,
-                    payer: currentBill.payer,
-                    payee: l.name,
-                    amount: l.total,
-                    status: 'UNPAID',
-                    createdAt: new Date().toISOString()
-                }));
-
-            // Write all owings to the owings collection
-            const owingsPromises = owingsToWrite.map(o => addDoc(collection(db, `artifacts/${appId}/public/data/owings`), o));
-            await Promise.all(owingsPromises);
-
-            // PDF Generation (unchanged)
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({unit:'pt', format:'a4'});
-            let y = 40;
-            doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.text('KUDHIN SPLIT BILL', 40, y); y += 22;
-            doc.setFontSize(11); doc.setFont("helvetica","normal");
-            doc.text(`BILL ID: ${billID}`, 40, y); y += 14;
-            doc.text(`DATE: ${currentBill.billDate || '-'}`, 40, y); y += 14;
-            doc.text(`VENDOR: ${currentBill.vendor}`, 40, y); y += 14;
-            doc.text(`PAYER: ${currentBill.payer || '-'}`, 40, y); y += 16;
-            doc.text(`GST 8%: ${currentBill.gstEnabled ? 'YES' : 'NO'}`, 40, y); y += 14;
-            doc.text(`MANUAL SERVICE TOTAL: ${currentBill.manualService}`, 40, y); y += 18;
-
-            doc.text('SHARED ITEMS:', 40, y); y += 14;
-            if(currentBill.sharedItems.length === 0){ doc.text('- NONE', 60, y); y += 14; }
-            else { currentBill.sharedItems.forEach(s=>{ doc.text(`- ${s.item}: ${f2(s.amount)}`, 60, y); y += 14; }); }
-            y += 8;
-
-            doc.text('PERSONS:', 40, y); y += 14;
-            const { lines: finalLines, grandTotal: finalGrandTotal } = computeTotalsDetailed();
-            finalLines.forEach(fl=>{
-                doc.text(`${fl.name}`, 40, y); y += 12;
-                doc.text(`Items: ${f2(fl.itemsTotal)}  Shared: ${f2(fl.sharedShare)}  Manual: ${f2(fl.manualShare)}`, 50, y); y += 12;
-                doc.text(`GST: ${f2(fl.gstShare)}  => TOTAL: ${f2(fl.total)}`, 50, y); y += 18;
-                if(y > 720){ doc.addPage(); y = 40; }
-            });
-            doc.text(`GRAND TOTAL: ${f2(finalGrandTotal)}`, 40, y);
-            doc.save(`Bill_${currentBill.billDate.replaceAll('-','') || billID.slice(0,5)}.pdf`);
-            
-            // Reset the bill state in Firestore for the next bill
-            await updateBill({
-                persons: [],
-                sharedItems: [],
-                gstEnabled: false,
-                billDate: '',
-                payer: '',
-                vendor: '',
-                manualService: 0
-            });
-            
-            // Reset the UI fields
-            el('#billDate').value = '';
-            el('#payerSelect').value = '';
-            el('#vendorSelect').value = '';
-            el('#manualService').value = '';
-            el('#gstToggle').classList.remove('active');
-            
-            closeModal();
-            showToast('Success', 'Bill and owings saved to Firestore!');
-
-        } catch (e) {
-            console.error("Error confirming and generating bill: ", e);
-            showToast('Error', 'Failed to save bill and owings.');
-        }
-    }
-
-    /* ===== Owings (card layout) ===== */
-    function renderOwings(owingsList){
-        const area = el('#owingsArea'); area.innerHTML = '';
-        if(owingsList.length === 0){
-            area.innerHTML = `<div style="padding:18px;border-radius:12px;border:1px dashed #e6f7ff;background:#fbfeff;text-align:center;color:var(--muted)">No owings yet — generate a bill to create owings.</div>`;
-            return;
-        }
-        const grouped = {};
-        owingsList.forEach(o=>{ (grouped[o.billID] ||= {meta:o, items:[]}).items.push(o); });
-        Object.keys(grouped).reverse().forEach(bid=>{
-            const g = grouped[bid];
-            const card = document.createElement('div'); card.className='owing-card';
-            const top = document.createElement('div'); top.className='owing-top';
-            const left = document.createElement('div'); left.style.flex='1'; left.innerHTML = `<div style="font-weight:800">Bill #${bid.slice(0, 8)}</div><div class="small" style="color:var(--muted)">${g.meta.date || '-'}</div>`;
-            const right = document.createElement('div'); right.style.textAlign='right'; right.innerHTML = `<div style="font-weight:700">${g.meta.payer}</div><div class="small" style="color:var(--muted)">Payer</div>`;
-            top.appendChild(left); top.appendChild(right); card.appendChild(top);
-
-            g.items.forEach(it=>{
-                const row = document.createElement('div'); row.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-top:10px';
-                const l = document.createElement('div'); l.innerHTML = `<div style="font-weight:700">${it.payee}</div><div class="small" style="color:var(--muted)">Owes to ${it.payer}</div>`;
-                const r = document.createElement('div'); r.style.display='flex'; r.style.flexDirection='column'; r.style.alignItems='flex-end';
-                const amt = document.createElement('div'); amt.style.fontWeight='800'; amt.textContent = f2(it.amount);
-                const status = document.createElement('div'); status.className=`status ${it.status}`; status.textContent = it.status;
-                const actions = document.createElement('div'); actions.style.marginTop='8px';
-                const btn = document.createElement('button'); btn.className='btn btn-primary'; btn.textContent = (it.status==='UNPAID')?'Mark Paid':(it.status==='PAID'?'Confirm Received':'Done');
-                btn.disabled = (it.status==='RECEIVED');
-                btn.onclick = async ()=>{
-                    let newStatus = it.status;
-                    if(it.status === 'UNPAID') newStatus = 'PAID';
-                    else if(it.status === 'PAID') newStatus = 'RECEIVED';
-                    
-                    try {
-                        await updateDoc(doc(db, `artifacts/${appId}/public/data/owings`, it.id), { status: newStatus });
-                        showToast('Success', `Owing marked as ${newStatus}.`);
-                    } catch (e) {
-                        console.error("Error updating owing:", e);
-                        showToast('Error', 'Failed to update owing status.');
-                    }
-                };
-                r.appendChild(amt); r.appendChild(status); r.appendChild(actions); actions.appendChild(btn);
-                row.appendChild(l); row.appendChild(r); card.appendChild(row);
-            });
-            area.appendChild(card);
-        });
-    }
-
-    /* ===== utilities ===== */
-    function exportData(){
-        const data = { users, vendors, owings, bills, currentBill };
-        const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `kudhin_export_${new Date().toISOString()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-    
-    async function clearAll(){
-        if(!confirm('Clear all saved bills/owings/vendors? This cannot be undone.')) return;
-        try {
-            const collectionsToDelete = ['vendors', 'bills', 'owings'];
-            for (const collectionName of collectionsToDelete) {
-                const q = collection(db, `artifacts/${appId}/public/data/${collectionName}`);
-                const snapshot = await getDocs(q);
-                const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, d.ref.path)));
-                await Promise.all(deletePromises);
-            }
-            showToast('Success', 'All data has been cleared!');
-        } catch (e) {
-            console.error("Error clearing data:", e);
-            showToast('Error', 'Failed to clear data.');
-        }
-    }
-
-    // --- Main app initialization ---
-    async function init() {
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Set up real-time listeners for all collections
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/users`), (snapshot) => {
-                    users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    // If no users exist, seed the database with the default users
-                    if (users.length === 0) {
-                        defaultUsers.forEach(u => addDoc(collection(db, `artifacts/${appId}/public/data/users`), u));
-                        return; // Exit to avoid race conditions with rendering
-                    }
-                    updateLoginSelect();
-                    updatePayerSelect(users);
-                    renderUsers(users);
-                });
-                
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/vendors`), (snapshot) => {
-                    vendors = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    refreshVendorSelect(vendors);
-                    refreshVendorList(vendors);
-                });
-
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/bills`), (snapshot) => {
-                    const mainBillDoc = snapshot.docs.find(d => d.id === currentBillId);
-                    if (mainBillDoc) {
-                        currentBill = mainBillDoc.data();
-                        
-                        // Update UI inputs from Firestore
-                        el('#billDate').value = currentBill.billDate;
-                        el('#payerSelect').value = currentBill.payer;
-                        el('#vendorSelect').value = currentBill.vendor;
-                        el('#manualService').value = currentBill.manualService;
-                        if (currentBill.gstEnabled) {
-                            el('#gstToggle').classList.add('active');
-                        } else {
-                            el('#gstToggle').classList.remove('active');
-                        }
-                        
-                        renderPersons(currentBill.persons);
-                        renderShared(currentBill.sharedItems);
-                    } else {
-                        // If no bill exists, create an empty one
-                        updateBill(currentBill);
-                    }
-                });
-
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/owings`), (snapshot) => {
-                    owings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderOwings(owings);
-                });
-
-            } else {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (error) {
-                    console.error("Error during authentication:", error);
-                }
-            }
-        });
-
-        // hamburger menu
-        el('#hamburger').addEventListener('click', (e)=>{ e.stopPropagation(); el('#menuDropdown').style.display = (el('#menuDropdown').style.display==='block'?'none':'block'); });
-        document.addEventListener('click', ()=>{ el('#menuDropdown').style.display='none'; });
-        
-        // ESC closes modal
-        document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
-    }
-    document.addEventListener('DOMContentLoaded', init);
-</script>
-</body>
-</html>
+export default App;
