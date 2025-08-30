@@ -12,17 +12,9 @@
   .scroll-table { overflow-x: auto; }
 </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 text-gray-800 pb-16">
 <div class="max-w-xs w-full mx-auto p-4">
   <h1 class="text-xl text-center mb-4">💰 Couple Budget Manager (MVR)</h1>
-
-  <div class="flex flex-wrap justify-between mb-4 text-sm">
-    <button class="tab-btn px-3 py-2 bg-blue-500 text-white rounded mb-1 w-full" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="expenses">Expenses</button>
-    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="fixed">Fixed Expenses</button>
-    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="categories">Categories</button>
-    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="settings">Settings</button>
-  </div>
 
   <div id="dashboard" class="tab-content active">
     <div class="flex justify-between items-center mb-3 text-sm">
@@ -131,6 +123,16 @@
       </table>
     </div>
   </div>
+
+  <div class="fixed bottom-0 left-0 right-0 z-10 bg-white shadow-lg border-t border-gray-200">
+    <div class="flex flex-wrap justify-around px-2 py-1 text-xs">
+      <button class="tab-btn flex-1 text-center py-2 px-1 bg-blue-500 text-white rounded-lg mx-1" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="expenses">Expenses</button>
+      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="fixed">Fixed</button>
+      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="categories">Cats</button>
+      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="settings">Settings</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -144,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsDate: new Date(),
   };
 
-  // If there's an old hardcoded value, remove it.
   S.incomes = S.incomes.filter(i => i.amount !== 85000);
   
   const D = {
