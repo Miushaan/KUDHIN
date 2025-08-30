@@ -2,192 +2,491 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bill Splitter</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Couple Budget App</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
 <style>
-  body { font-family: 'Inter', sans-serif; background:#f0f2f5; color:#333; }
-  .flat-input { border-radius:0; border-bottom:2px solid #ccc; background:transparent; padding:0.75rem; transition:border-color 0.2s; }
-  .flat-input:focus { outline:none; border-color:#3b82f6; }
-  .flat-btn { border-radius:0; box-shadow:none; }
-  .flat-card { border-radius:0.5rem; box-shadow:none; background:white; padding:1rem; }
-  @media print { .no-print { display:none !important; } }
-  .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
-  @keyframes slide-up { from { transform:translateY(100px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .scroll-table { overflow-x: auto; }
 </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-gray-100 text-gray-800">
+<div class="max-w-xs w-full mx-auto p-4">
+  <h1 class="text-xl text-center mb-4">💰 Couple Budget Manager (MVR)</h1>
 
-<div id="app" class="container mx-auto p-4 max-w-md"></div>
-<div id="modalContainer"></div>
-<div id="messageContainer"></div>
+  <div class="flex flex-wrap justify-between mb-4 text-sm">
+    <button class="tab-btn px-3 py-2 bg-blue-500 text-white rounded mb-1 w-full" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="expenses">Expenses</button>
+    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="fixed">Fixed Expenses</button>
+    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="categories">Categories</button>
+    <button class="tab-btn px-3 py-2 bg-gray-300 rounded mb-1 w-full" data-tab="settings">Settings</button>
+  </div>
+
+  <div id="dashboard" class="tab-content active">
+    <div class="flex justify-between items-center mb-3 text-sm">
+      <button id="prev-month" class="px-2 py-1 bg-gray-300 rounded">« Prev</button>
+      <span id="current-month" class="text-base"></span>
+      <button id="next-month" class="px-2 py-1 bg-gray-300 rounded">Next »</button>
+    </div>
+    <button id="today-month" class="w-full mb-3 px-2 py-2 bg-blue-500 text-white rounded text-sm">📅 Current Month</button>
+
+    <div class="space-y-3">
+      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
+        <div>Total Income</div>
+        <div id="total-income" class="text-base">0 MVR</div>
+      </div>
+      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
+        <div>Total Expenses</div>
+        <div id="total-expenses" class="text-base">0 MVR</div>
+      </div>
+      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
+        <div>Remaining Balance</div>
+        <div id="remaining" class="text-base text-green-600">0 MVR</div>
+      </div>
+    </div>
+    <button id="add-income-btn" class="mt-3 w-full bg-blue-500 text-white px-3 py-2 rounded text-sm">➕ Add Salary / Income</button>
+  </div>
+
+  <div id="expenses" class="tab-content scroll-table">
+    <h2 class="text-base mb-2">Add Expense</h2>
+    <form id="expense-form" class="space-y-2 mb-3">
+      <input type="text" id="expense-desc" placeholder="Description" class="w-full p-2 border rounded text-sm" required>
+      <select id="expense-cat" class="w-full p-2 border rounded text-sm" required></select>
+      <input type="number" id="expense-amt" placeholder="Amount (MVR)" class="w-full p-2 border rounded text-sm" required>
+      <input type="file" id="expense-img" accept="image/*" class="w-full text-sm">
+      <button type="submit" class="w-full bg-green-500 text-white px-2 py-2 rounded text-sm">Add Expense</button>
+    </form>
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto bg-white shadow rounded mb-3 text-xs">
+        <thead><tr class="bg-gray-200"><th class='p-2'>Date</th><th class='p-2'>Desc</th><th class='p-2'>Cat</th><th class='p-2'>Amount</th><th class='p-2'>Bill</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="expense-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="fixed" class="tab-content scroll-table">
+    <h2 class="text-base mb-2">Fixed Expenses</h2>
+    <form id="fixed-form" class="space-y-2 mb-3">
+      <select id="fixed-cat" class="w-full p-2 border rounded text-sm" required></select>
+      <input type="number" id="fixed-amt" placeholder="Amount (MVR)" class="w-full p-2 border rounded text-sm" required>
+      <button type="submit" class="w-full bg-blue-500 text-white px-2 py-2 rounded text-sm">Add / Update</button>
+    </form>
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto bg-white shadow rounded text-xs">
+        <thead><tr class="bg-gray-200"><th class='p-2'>Category</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="fixed-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="categories" class="tab-content scroll-table">
+    <h2 class="text-base mb-2">Categories</h2>
+    <form id="category-form" class="space-y-2 mb-3">
+      <input type="text" id="cat-name" placeholder="Category Name" class="w-full p-2 border rounded text-sm" required>
+      <select id="cat-type" class="w-full p-2 border rounded text-sm" required>
+        <option value="expense">Expense</option>
+        <option value="fixed">Fixed Expense</option>
+      </select>
+      <button type="submit" class="w-full bg-purple-500 text-white px-2 py-2 rounded text-sm">Add Category</button>
+    </form>
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto bg-white shadow rounded text-xs">
+        <thead><tr class="bg-gray-200"><th class='p-2'>Name</th><th class='p-2'>Type</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="category-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="settings" class="tab-content scroll-table">
+    <h2 class="text-base mb-2">Settings</h2>
+    <div class="flex justify-between items-center mb-2 text-sm">
+      <button id="settings-prev-month" class="px-2 py-1 bg-gray-300 rounded">« Prev</button>
+      <span id="settings-current-month" class="text-base"></span>
+      <button id="settings-next-month" class="px-2 py-1 bg-gray-300 rounded">Next »</button>
+    </div>
+    <button id="settings-today-month" class="w-full mb-2 bg-blue-500 text-white px-2 py-2 rounded text-sm">📅 Current Month</button>
+    <button id="reset-month" class="w-full mb-3 bg-red-500 text-white px-2 py-2 rounded text-sm">🗑 Reset All Monthly Data</button>
+
+    <div class="overflow-x-auto mb-2">
+      <h3 class="text-sm text-gray-700 mb-1">Monthly Income</h3>
+      <table class="w-full table-auto bg-white shadow rounded mb-2 text-xs">
+        <thead><tr class='bg-gray-200'><th class='p-2'>Date</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="settings-income-table"></tbody>
+      </table>
+    </div>
+    <div class="overflow-x-auto mb-2">
+      <h3 class="text-sm text-gray-700 mb-1">Monthly Expenses</h3>
+      <table class="w-full table-auto bg-white shadow rounded mb-2 text-xs">
+        <thead><tr class='bg-gray-200'><th class='p-2'>Expense</th><th class='p-2'>Category</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="settings-expense-table"></tbody>
+      </table>
+    </div>
+    <div class="overflow-x-auto">
+      <h3 class="text-sm text-gray-700 mb-1">Fixed Expenses</h3>
+      <table class="w-full table-auto bg-white shadow rounded text-xs">
+        <thead><tr class='bg-gray-200'><th class='p-2'>Fixed Expense</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
+        <tbody id="settings-fixed-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <script>
-/* ---------------------- CONFIG & STATE ---------------------- */
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsDZ462_BV5mP4z1OqWu3F4WQWuB7seomvjuzkXaEijE1ZnSNB2p0_gHHM4zEgT0_Rw/exec";
-const GST_RATE = 8;
-
-let people = [
-  {id:'miu', name:'Miu'}, {id:'raya', name:'Raya'}, {id:'aslan', name:'Aslan'},
-  {id:'reesha', name:'Reesha'}, {id:'appal', name:'Appal'}, {id:'uly', name:'Uly'},
-  {id:'irufaan', name:'Irufaan'}
-];
-let items = [], isGstEnabled=false, otherCharges=0, selectedPersonId=people[0].id;
-let currentScreen='main', modalType=null, message=null;
-let billDate='', vendorName='', actualPaidTotal='', payerName='', billCounter=1;
-let savedBills = JSON.parse(localStorage.getItem('savedBills')||'[]');
-
-/* ---------------------- UTILITY ---------------------- */
-const getIcon=(name)=>lucide.icons[name] ? lucide.icons[name] : '';
-const showMessage=(text,type='success')=>{
-  message={text,type};
-  renderMessage();
-  setTimeout(()=>{message=null; renderMessage();},3000);
-};
-const capitalize=(str)=>str ? str.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ') : '';
-
-/* ---------------------- RENDER ---------------------- */
-const renderApp=()=>{
-  const appDiv=document.getElementById('app');
-  appDiv.innerHTML=`<h1 class="text-3xl font-extrabold text-center mb-6 text-blue-600">Bill Splitter</h1>`;
-  if(currentScreen==='main'){ renderMainScreen(); } else { renderHistoryScreen(); }
-  renderModal(); renderMessage();
-};
-
-const renderMainScreen=()=>{
-  const appDiv=document.getElementById('app');
-  const itemsByPerson = items.reduce((acc,it)=>{ (acc[it.assignedTo]=acc[it.assignedTo]||[]).push(it); return acc; },{});
-  const container=document.createElement('div');
-  container.className='space-y-5';
-
-  container.innerHTML=`
-  <div class="flat-card space-y-3">
-    <h2 class="font-bold text-lg text-gray-800">Bill Details</h2>
-    <input type="date" id="billDate" value="${billDate}" class="w-full flat-input">
-    <input type="text" id="vendorName" placeholder="Vendor Name" value="${vendorName}" class="w-full flat-input">
-    <input type="number" id="actualPaidTotal" placeholder="Actual Paid Total" value="${actualPaidTotal}" step="0.01" class="w-full flat-input">
-  </div>
-  
-  <div class="flat-card space-y-3">
-    <h2 class="font-bold text-lg text-gray-800">Add Item</h2>
-    <select id="personSelect" class="w-full flat-input mb-2">${people.map(p=>`<option value="${p.id}" ${selectedPersonId===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
-    <input type="text" id="itemName" placeholder="Item Name" class="w-full flat-input mb-2">
-    <input type="number" id="itemCost" placeholder="Cost" class="w-full flat-input mb-2" step="0.01">
-    <button id="addItemBtn" class="w-full flat-btn bg-blue-600 text-white font-semibold py-2">Add Item</button>
-  </div>
-
-  <div class="flat-card space-y-2">
-    <h2 class="font-bold text-lg text-gray-800">Current Items</h2>
-    ${people.map(p=>{
-      const personItems=itemsByPerson[p.id]||[];
-      if(personItems.length===0) return '';
-      return `<div class="p-2 border-b last:border-b-0">
-        <p class="font-semibold text-blue-600">${p.name}</p>
-        ${personItems.map(it=>`<div class="flex justify-between text-gray-800 text-sm py-1">
-          <span>${it.name}</span>
-          <span>MVR${it.cost.toFixed(2)} <button data-id="${it.id}" class="text-red-500 remove-item-btn">${getIcon('X')}</button></span>
-        </div>`).join('')}
-      </div>`;
-    }).join('')}
-    ${items.length===0?'<p class="text-gray-500 text-center text-sm">No items yet</p>':''}
-  </div>
-
-  <div class="flex gap-2">
-    <button id="toggleGst" class="flex-1 flat-btn py-2 ${isGstEnabled?'bg-green-600 text-white':'bg-gray-300'}">GST ${isGstEnabled?`(${GST_RATE}%)`:''}</button>
-    <input type="number" id="otherCharges" value="${otherCharges}" placeholder="Other" class="flex-1 flat-input">
-  </div>
-
-  <div class="flex gap-2">
-    <button id="resetBillBtn" class="flex-1 bg-red-600 text-white flat-btn py-2">Reset</button>
-    <button id="generateBillBtn" class="flex-1 bg-purple-600 text-white flat-btn py-2">Generate Bill</button>
-    <button id="historyTabBtn" class="flex-1 bg-gray-300 flat-btn py-2">History</button>
-  </div>
-  `;
-  appDiv.appendChild(container);
-
-  // Event listeners
-  document.getElementById('addItemBtn').onclick=()=>{ 
-    const name=capitalize(document.getElementById('itemName').value.trim());
-    const cost=parseFloat(document.getElementById('itemCost').value);
-    const pid=document.getElementById('personSelect').value;
-    if(!name||isNaN(cost)||cost<=0){showMessage('Invalid item','error');return;}
-    items.push({id:`item-${Date.now()}`,name,cost,assignedTo:pid});
-    document.getElementById('itemName').value=''; document.getElementById('itemCost').value=''; renderApp();
+document.addEventListener('DOMContentLoaded', () => {
+  const S = {
+    incomes: JSON.parse(localStorage.getItem('incomes')) || [],
+    expenses: JSON.parse(localStorage.getItem('expenses')) || [],
+    fixedExpenses: JSON.parse(localStorage.getItem('fixedExpenses')) || [],
+    categories: JSON.parse(localStorage.getItem('categories')) || [],
+    selectedDate: new Date(),
+    settingsDate: new Date(),
   };
-  document.querySelectorAll('.remove-item-btn').forEach(btn=>{
-    btn.onclick=()=>{ items=items.filter(it=>it.id!==btn.getAttribute('data-id')); renderApp(); };
+
+  // If there's an old hardcoded value, remove it.
+  S.incomes = S.incomes.filter(i => i.amount !== 85000);
+  
+  const D = {
+    totalIncome: document.getElementById('total-income'),
+    totalExpenses: document.getElementById('total-expenses'),
+    remaining: document.getElementById('remaining'),
+    currentMonth: document.getElementById('current-month'),
+    settingsCurrentMonth: document.getElementById('settings-current-month'),
+    tabBtns: document.querySelectorAll('.tab-btn'),
+    tabContents: document.querySelectorAll('.tab-content'),
+    expenseForm: document.getElementById('expense-form'),
+    expenseCat: document.getElementById('expense-cat'),
+    fixedForm: document.getElementById('fixed-form'),
+    fixedCat: document.getElementById('fixed-cat'),
+    categoryForm: document.getElementById('category-form'),
+    expenseTable: document.getElementById('expense-table'),
+    fixedTable: document.getElementById('fixed-table'),
+    categoryTable: document.getElementById('category-table'),
+    settingsIncomeTable: document.getElementById('settings-income-table'),
+    settingsExpenseTable: document.getElementById('settings-expense-table'),
+    settingsFixedTable: document.getElementById('settings-fixed-table'),
+    addIncomeBtn: document.getElementById('add-income-btn'),
+    resetMonthBtn: document.getElementById('reset-month'),
+  };
+
+  const saveData = () => {
+    localStorage.setItem('incomes', JSON.stringify(S.incomes));
+    localStorage.setItem('expenses', JSON.stringify(S.expenses));
+    localStorage.setItem('fixedExpenses', JSON.stringify(S.fixedExpenses));
+    localStorage.setItem('categories', JSON.stringify(S.categories));
+  };
+
+  const formatMonth = (date) => date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const formatAmount = (amount) => `${amount.toLocaleString()} MVR`;
+  const formatDateTime = (date) => new Date(date).toLocaleDateString();
+
+  const updateDashboard = () => {
+    D.currentMonth.textContent = formatMonth(S.selectedDate);
+    const month = S.selectedDate.getMonth();
+    const year = S.selectedDate.getFullYear();
+
+    const currentIncomes = S.incomes.filter(i => {
+      const d = new Date(i.date || new Date());
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+    const totalIncome = currentIncomes.reduce((sum, i) => sum + i.amount, 0);
+
+    const currentExpenses = S.expenses.filter(e => {
+      const d = new Date(e.date);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+    const totalMonthlyExpenses = currentExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalFixedExpenses = S.fixedExpenses.reduce((sum, f) => sum + f.amount, 0);
+    const totalExpenses = totalMonthlyExpenses + totalFixedExpenses;
+
+    D.totalIncome.textContent = formatAmount(totalIncome);
+    D.totalExpenses.textContent = formatAmount(totalExpenses);
+    const remaining = totalIncome - totalExpenses;
+    D.remaining.textContent = formatAmount(remaining);
+    D.remaining.classList.remove('text-red-600', 'text-green-600');
+    D.remaining.classList.add(remaining < 0 ? 'text-red-600' : 'text-green-600');
+  };
+
+  const updateSettingsMonthLabel = () => {
+    D.settingsCurrentMonth.textContent = formatMonth(S.settingsDate);
+  };
+
+  const renderCategories = () => {
+    D.expenseCat.innerHTML = '';
+    D.fixedCat.innerHTML = '';
+    D.categoryTable.innerHTML = '';
+
+    S.categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      if (cat.type === 'expense') D.expenseCat.appendChild(option);
+      if (cat.type === 'fixed') D.fixedCat.appendChild(option);
+
+      const tr = document.createElement('tr');
+      tr.className = 'border-t text-center';
+      tr.innerHTML = `
+        <td class='p-2'>${cat.name}</td>
+        <td class='p-2'>${cat.type}</td>
+        <td class='p-2'>
+          <button class='delete-cat-btn bg-red-500 text-white px-2 py-1 rounded' data-name='${cat.name}'>Del</button>
+        </td>
+      `;
+      D.categoryTable.appendChild(tr);
+    });
+  };
+
+  const renderExpenses = () => {
+    D.expenseTable.innerHTML = '';
+    const month = S.selectedDate.getMonth();
+    const year = S.selectedDate.getFullYear();
+    S.expenses.filter(e => new Date(e.date).getMonth() === month && new Date(e.date).getFullYear() === year)
+      .forEach((e, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t text-center';
+        tr.innerHTML = `
+          <td class='p-2 text-sm'>${formatDateTime(e.date)}</td>
+          <td class='p-2'>${e.desc}</td>
+          <td class='p-2'>${e.cat}</td>
+          <td class='p-2'>${formatAmount(e.amount)}</td>
+          <td class='p-2'>
+            ${e.bill ? `<a href='${e.bill}' target='_blank' class='text-blue-500'>View</a>` : 'N/A'}
+          </td>
+          <td class='p-2'>
+            <button class='delete-exp-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button>
+          </td>
+        `;
+        D.expenseTable.appendChild(tr);
+      });
+  };
+
+  const renderFixedExpenses = () => {
+    D.fixedTable.innerHTML = '';
+    S.fixedExpenses.forEach((f, index) => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-t text-center';
+      tr.innerHTML = `
+        <td class='p-2'>${f.cat}</td>
+        <td class='p-2'>${formatAmount(f.amount)}</td>
+        <td class='p-2'>
+          <button class='delete-fixed-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button>
+        </td>
+      `;
+      D.fixedTable.appendChild(tr);
+    });
+  };
+
+  const renderSettingsTables = () => {
+    const month = S.settingsDate.getMonth();
+    const year = S.settingsDate.getFullYear();
+
+    const monthlyIncomes = S.incomes.filter(i => new Date(i.date).getMonth() === month && new Date(i.date).getFullYear() === year);
+    D.settingsIncomeTable.innerHTML = monthlyIncomes.map((i, index) => `
+      <tr class='border-t text-center'>
+        <td class='p-2'>${formatDateTime(i.date)}</td>
+        <td class='p-2'>${formatAmount(i.amount)}</td>
+        <td class='p-2'><button class='delete-inc-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
+      </tr>
+    `).join('');
+
+    const monthlyExpenses = S.expenses.filter(e => new Date(e.date).getMonth() === month && new Date(e.date).getFullYear() === year);
+    D.settingsExpenseTable.innerHTML = monthlyExpenses.map((e, index) => `
+      <tr class='border-t text-center'>
+        <td class='p-2'>${formatDateTime(e.date)}</td>
+        <td class='p-2'>${e.cat}</td>
+        <td class='p-2'>${formatAmount(e.amount)}</td>
+        <td class='p-2'><button class='delete-settings-exp-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
+      </tr>
+    `).join('');
+
+    D.settingsFixedTable.innerHTML = S.fixedExpenses.map((f, index) => `
+      <tr class='border-t text-center'>
+        <td class='p-2'>${f.cat}</td>
+        <td class='p-2'>${formatAmount(f.amount)}</td>
+        <td class='p-2'><button class='delete-fixed-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
+      </tr>
+    `).join('');
+  };
+
+  const updateAll = () => {
+    updateDashboard();
+    updateSettingsMonthLabel();
+    renderCategories();
+    renderExpenses();
+    renderFixedExpenses();
+    renderSettingsTables();
+  };
+
+  // Event Listeners
+  D.tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      D.tabBtns.forEach(b => b.classList.remove('bg-blue-500', 'text-white'));
+      btn.classList.add('bg-blue-500', 'text-white');
+      D.tabContents.forEach(c => c.classList.remove('active'));
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      updateAll();
+    });
   });
-  document.getElementById('toggleGst').onclick=()=>{ isGstEnabled=!isGstEnabled; renderApp(); };
-  document.getElementById('otherCharges').oninput=(e)=>{ otherCharges=parseFloat(e.target.value)||0; };
-  document.getElementById('resetBillBtn').onclick=()=>{ items=[]; billDate=''; vendorName=''; actualPaidTotal=''; renderApp(); };
-  document.getElementById('generateBillBtn').onclick=()=>{ modalType='selectPayer'; renderModal(); };
-  document.getElementById('historyTabBtn').onclick=()=>{ currentScreen='history'; renderApp(); };
-};
 
-const renderHistoryScreen=()=>{
-  const appDiv=document.getElementById('app');
-  const container=document.createElement('div'); container.className='space-y-4';
-  container.innerHTML=`<button id="backBtn" class="flat-btn py-2 px-3 bg-gray-300 w-full">Back</button>`;
-  savedBills.reverse().forEach((b,i)=>{
-    container.innerHTML+=`
-      <div class="flat-card">
-        <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('billDetail${i}').classList.toggle('hidden')">
-          <span class="font-bold">${b.billNumber} - ${b.vendor}</span>
-          <span>MVR${b.actualPaidTotal}</span>
-        </div>
-        <div id="billDetail${i}" class="hidden mt-2 space-y-1">
-          <p>Date: ${b.billDate}</p>
-          <p>Payer: ${b.payer}</p>
-          <p>Items:</p>
-          ${b.items.map(it=>`<div class="flex justify-between text-sm"><span>${it.name}</span><span>MVR${it.cost.toFixed(2)}</span></div>`).join('')}
-        </div>
-      </div>`;
+  document.getElementById('prev-month').onclick = () => { S.selectedDate.setMonth(S.selectedDate.getMonth() - 1); updateAll(); };
+  document.getElementById('next-month').onclick = () => { S.selectedDate.setMonth(S.selectedDate.getMonth() + 1); updateAll(); };
+  document.getElementById('today-month').onclick = () => { S.selectedDate = new Date(); updateAll(); };
+
+  document.getElementById('settings-prev-month').onclick = () => { S.settingsDate.setMonth(S.settingsDate.getMonth() - 1); updateAll(); };
+  document.getElementById('settings-next-month').onclick = () => { S.settingsDate.setMonth(S.settingsDate.getMonth() + 1); updateAll(); };
+  document.getElementById('settings-today-month').onclick = () => { S.settingsDate = new Date(); updateAll(); };
+
+  D.addIncomeBtn.addEventListener('click', () => {
+    const amount = parseFloat(prompt('Enter salary/income amount (MVR):'));
+    if (amount > 0) {
+      const selectedMonth = prompt('Enter month for this income (YYYY-MM):');
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        if (!isNaN(year) && !isNaN(month) && month > 0 && month <= 12) {
+          S.incomes.push({ amount, date: new Date(year, month - 1, 1) });
+          saveData();
+          updateAll();
+          alert('Income added successfully! 🎉');
+        } else {
+          alert('Invalid month format. Please use YYYY-MM.');
+        }
+      } else {
+        S.incomes.push({ amount, date: new Date() });
+        saveData();
+        updateAll();
+        alert('Income added successfully! 🎉 (Defaulting to current month)');
+      }
+    } else {
+      alert('Please enter a valid amount.');
+    }
   });
-  appDiv.appendChild(container);
-  document.getElementById('backBtn').onclick=()=>{ currentScreen='main'; renderApp(); };
-};
 
-const renderModal=()=>{
-  const modalContainer=document.getElementById('modalContainer'); if(!modalType){modalContainer.innerHTML=''; return;}
-  if(modalType==='selectPayer'){
-    modalContainer.innerHTML=`
-      <div class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
-        <div class="flat-card w-full max-w-sm text-center space-y-3">
-          <h3 class="font-semibold text-lg">Select Payer</h3>
-          <select id="payerSelect" class="w-full flat-input mb-2">${people.map(p=>`<option value="${p.name}">${p.name}</option>`).join('')}</select>
-          <div class="flex gap-2">
-            <button id="cancelPayerBtn" class="flex-1 flat-btn bg-gray-300 py-2">Cancel</button>
-            <button id="confirmPayerBtn" class="flex-1 flat-btn bg-purple-600 text-white py-2">Confirm</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.getElementById('cancelPayerBtn').onclick=()=>{ modalType=null; renderModal(); };
-    document.getElementById('confirmPayerBtn').onclick=()=>{
-      payerName=document.getElementById('payerSelect').value; modalType=null; generateBill();
-    };
-  }
-};
+  D.expenseForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const desc = document.getElementById('expense-desc').value;
+    const cat = D.expenseCat.value;
+    const amount = parseFloat(document.getElementById('expense-amt').value);
+    const imgFile = document.getElementById('expense-img').files[0];
 
-const renderMessage=()=>{ 
-  const msgDiv=document.getElementById('messageContainer'); 
-  if(!message){msgDiv.innerHTML=''; return;}
-  msgDiv.innerHTML=`<div class="fixed top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded shadow text-white z-50 bg-${message.type==='success'?'green':'red'}-500">${message.text}</div>`;
-};
+    if (amount <= 0 || !desc || !cat) {
+      alert('Please fill out all fields with valid data.');
+      return;
+    }
 
-/* ---------------------- BILL GENERATION ---------------------- */
-const generateBill=()=>{
-  if(items.length===0){showMessage('Add items first','error'); return;}
-  const bill={billNumber:billCounter++, billDate, vendor:vendorName, actualPaidTotal, payer:payerName, items, gstEnabled:isGstEnabled, otherCharges};
-  savedBills.push(bill); localStorage.setItem('savedBills',JSON.stringify(savedBills));
-  fetch(GOOGLE_SCRIPT_URL,{method:'POST',body:JSON.stringify(bill)}).then(()=>showMessage('Bill saved')).catch(()=>showMessage('Error','error'));
-  items=[]; actualPaidTotal=''; renderApp();
-};
+    if (imgFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        S.expenses.push({ desc, cat, amount, date: new Date(), bill: reader.result });
+        saveData();
+        updateAll();
+        D.expenseForm.reset();
+        alert('Expense added successfully! ✅');
+      };
+      reader.readAsDataURL(imgFile);
+    } else {
+      S.expenses.push({ desc, cat, amount, date: new Date(), bill: null });
+      saveData();
+      updateAll();
+      D.expenseForm.reset();
+      alert('Expense added successfully! ✅');
+    }
+  });
 
-/* ---------------------- INIT ---------------------- */
-window.onload=()=>{ renderApp(); };
+  D.fixedForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const cat = D.fixedCat.value;
+    const amount = parseFloat(document.getElementById('fixed-amt').value);
+
+    if (amount <= 0 || !cat) {
+      alert('Please fill out all fields with valid data.');
+      return;
+    }
+
+    const existingFixed = S.fixedExpenses.find(f => f.cat === cat);
+    if (existingFixed) {
+      existingFixed.amount = amount;
+      alert(`Fixed expense for '${cat}' updated successfully!`);
+    } else {
+      S.fixedExpenses.push({ cat, amount });
+      alert('Fixed expense added successfully! ✅');
+    }
+    saveData();
+    updateAll();
+    D.fixedForm.reset();
+  });
+
+  D.categoryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('cat-name').value;
+    const type = document.getElementById('cat-type').value;
+
+    if (!name) {
+      alert('Category name cannot be empty.');
+      return;
+    }
+    const isExisting = S.categories.some(c => c.name.toLowerCase() === name.toLowerCase());
+    if (isExisting) {
+      alert('This category already exists.');
+      return;
+    }
+
+    S.categories.push({ name, type });
+    saveData();
+    updateAll();
+    D.categoryForm.reset();
+    alert('Category added successfully! ✅');
+  });
+
+  D.resetMonthBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to reset all incomes and expenses for the current month? Fixed expenses will remain.')) {
+      const month = S.settingsDate.getMonth();
+      const year = S.settingsDate.getFullYear();
+      S.incomes = S.incomes.filter(i => new Date(i.date).getMonth() !== month || new Date(i.date).getFullYear() !== year);
+      S.expenses = S.expenses.filter(e => new Date(e.date).getMonth() !== month || new Date(e.date).getFullYear() !== year);
+      saveData();
+      updateAll();
+      alert('Month data has been reset! 🗑️');
+    }
+  });
+
+  document.body.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-cat-btn')) {
+      const name = e.target.dataset.name;
+      const isUsed = S.expenses.some(exp => exp.cat === name) || S.fixedExpenses.some(f => f.cat === name);
+      if (isUsed) {
+        alert('Cannot delete category. It is currently in use.');
+      } else if (confirm(`Are you sure you want to delete the '${name}' category?`)) {
+        S.categories = S.categories.filter(c => c.name !== name);
+        saveData();
+        updateAll();
+      }
+    } else if (e.target.classList.contains('delete-exp-btn') || e.target.classList.contains('delete-settings-exp-btn')) {
+      if (confirm('Are you sure you want to delete this expense?')) {
+        const index = e.target.dataset.index;
+        S.expenses.splice(index, 1);
+        saveData();
+        updateAll();
+      }
+    } else if (e.target.classList.contains('delete-fixed-btn')) {
+      if (confirm('Are you sure you want to delete this fixed expense?')) {
+        const index = e.target.dataset.index;
+        S.fixedExpenses.splice(index, 1);
+        saveData();
+        updateAll();
+      }
+    } else if (e.target.classList.contains('delete-inc-btn')) {
+      if (confirm('Are you sure you want to delete this income?')) {
+        const index = e.target.dataset.index;
+        S.incomes.splice(index, 1);
+        saveData();
+        updateAll();
+      }
+    }
+  });
+
+  updateAll();
+});
 </script>
 </body>
 </html>
