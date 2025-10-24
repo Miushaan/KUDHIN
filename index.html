@@ -3,36 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Project Status Dashboard</title>
+    <title>Scalable Project Status Dashboard</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind for the "Inter" font -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7f9fb;
         }
-        /* Custom scrollbar for aesthetic */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .modal {
+            transition: opacity 0.3s ease-in-out;
         }
     </style>
 </head>
 <body class="p-4 sm:p-8">
 
     <div id="app" class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <header class="mb-8 p-6 bg-white shadow-lg rounded-xl">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-900">DAILY PROJECT STATUS UPDATE</h1>
-            <p class="text-lg text-gray-600 mt-1">Week 43 Report - Prepared: <span id="report-date"></span></p>
+        <!-- Header & Date -->
+        <header class="mb-8 p-6 bg-white shadow-lg rounded-xl flex justify-between items-center flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-900">SCALABLE PROJECT STATUS</h1>
+                <p class="text-lg text-gray-600 mt-1">Reviewing High-Volume Reports: <span id="user-id-display" class="font-mono text-sm px-2 py-0.5 bg-gray-100 rounded"></span></p>
+            </div>
+            <button id="open-modal-btn" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                Add New Vessel Data
+            </button>
         </header>
 
         <!-- KPI Dashboard Section -->
@@ -43,43 +40,35 @@
             </div>
         </section>
 
-        <!-- Agenda and Project Updates (Side-by-Side on Desktop) -->
-        <div class="lg:grid lg:grid-cols-3 lg:gap-8 mb-10">
-            <!-- Agenda -->
-            <section class="lg:col-span-1 mb-8 lg:mb-0">
-                <div class="bg-white p-6 shadow-lg rounded-xl h-full">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Meeting Agenda</h2>
-                    <ol id="agenda-list" class="space-y-3">
-                        <!-- Agenda items will be rendered here -->
-                    </ol>
-                </div>
-            </section>
-
-            <!-- Project Updates -->
-            <section class="lg:col-span-2">
-                <div class="bg-white p-6 shadow-lg rounded-xl h-full">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Key Project Updates</h2>
-                    <ul id="project-updates-list" class="space-y-4">
-                        <!-- Project updates will be rendered here -->
-                    </ul>
-                </div>
-            </section>
-        </div>
-
+        <!-- Data Tools: Search and Filter -->
+        <section class="mb-6 bg-white p-4 shadow-lg rounded-xl">
+            <h3 class="text-xl font-bold text-gray-800 mb-3">Data Filtering</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <input type="text" id="search-input" placeholder="Search by Vessel Name or Customer" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select id="customer-type-filter" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Filter by Customer Type (All)</option>
+                    <option value="EXTERNAL">External</option>
+                    <option value="INTERNAL">Internal</option>
+                    <option value="INTER-DIVISION">Inter-Division</option>
+                </select>
+                <button id="reset-filters-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-150">Reset Filters</button>
+            </div>
+        </section>
 
         <!-- Detailed Vessel Status Table -->
         <section class="mb-10">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Vessels On Dock - Detailed Status (15 Total)</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Vessels On Dock - Detailed Status</h2>
             <div class="bg-white p-4 shadow-lg rounded-xl overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vessel Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Docked On</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Age (Days)</th>
+                            <!-- Added click handlers for sorting -->
+                            <th data-sort="id" class="cursor-pointer px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100">#</th>
+                            <th data-sort="name" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100">Vessel Name</th>
+                            <th data-sort="customer" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100">Customer</th>
+                            <th data-sort="type" class="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100">Type</th>
+                            <th data-sort="age" class="cursor-pointer px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100">Age (Days)</th>
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="vessel-table-body" class="bg-white divide-y divide-gray-200">
@@ -87,195 +76,455 @@
                     </tbody>
                 </table>
             </div>
-        </section>
-
-        <!-- Pending PR/MTR Status Table -->
-        <section class="mb-10">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Critical Pending PR/MTR Status</h2>
-            <div class="bg-white p-4 shadow-lg rounded-xl overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vessel</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PR/MTR</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks / Action Required</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pr-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- PR/MTR rows will be rendered here -->
-                    </tbody>
-                </table>
+            <!-- Pagination Controls -->
+            <div class="flex justify-between items-center mt-4 px-4 py-2 bg-white rounded-xl shadow-lg">
+                <button id="prev-page-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-150 hover:bg-gray-400 disabled:opacity-50" disabled>Previous</button>
+                <span id="page-info" class="text-sm text-gray-700">Page 1 of 1</span>
+                <button id="next-page-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-150 hover:bg-gray-400 disabled:opacity-50" disabled>Next</button>
             </div>
+            <p id="loading-indicator" class="mt-4 text-center text-blue-600 font-semibold hidden">Loading data...</p>
         </section>
 
     </div>
+    
+    <!-- Input Modal -->
+    <div id="data-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Add New Vessel</h2>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <form id="vessel-form" class="space-y-4">
+                <input type="hidden" id="vessel-doc-id">
+                <div>
+                    <label for="vessel-name" class="block text-sm font-medium text-gray-700">Vessel Name</label>
+                    <input type="text" id="vessel-name" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="customer" class="block text-sm font-medium text-gray-700">Customer Name</label>
+                    <input type="text" id="customer" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="docked-on" class="block text-sm font-medium text-gray-700">Docked On (YYYY-MM-DD)</label>
+                    <input type="date" id="docked-on" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="customer-type" class="block text-sm font-medium text-gray-700">Customer Type</label>
+                    <select id="customer-type" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg">
+                        <option value="EXTERNAL">External</option>
+                        <option value="INTERNAL">Internal</option>
+                        <option value="INTER-DIVISION">Inter-Division</option>
+                    </select>
+                </div>
+                <button type="submit" id="save-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Save Vessel</button>
+            </form>
+            <p id="form-message" class="mt-3 text-center text-sm text-red-500 hidden"></p>
+        </div>
+    </div>
 
-    <script>
-        // --- 1. DATA SOURCE: UPDATE THIS OBJECT DAILY ---
-        const reportData = {
-            date: "24 October 2025",
-            agenda: [
-                "Follow Up: Review and follow-up on all action items from the previous meeting.",
-                "Customer Service Review: Detailed updates on external (docking, quotations, sales leads) and internal (new service requests, pending task allocation) customers.",
-                "Planning Updates: Progress review for both external and internal vessel dry-docking (D/D) preparations and scheduling.",
-                "Project Updates: Status of vessels currently on dry-dock, high-priority jobs, resource allocation, and challenges/solutions.",
-                "Summary & Actions: Defining clear action items, assigning designations, and confirming next steps.",
-                "Closing: General discussion and addressing any other open issues."
-            ],
-            kpis: {
-                totalVessels: 15,
-                longestDockingDays: 1527,
-                internalVessels: 11,
-                externalVessels: 4
-            },
-            vesselStatus: [
-                { id: 1, name: "MAHAA KORAKALI", customer: "MTCC ERD", docked: "16-Aug-21", type: "INTERNAL", age: 1527 },
-                { id: 2, name: "NIYAAMA 2", customer: "MTCC TSD", docked: "10-Apr-23", type: "INTER-DIVISION", age: 925 },
-                { id: 3, name: "YANMAR BOAT", customer: "MTCC TRD", docked: "3-Aug-23", type: "INTER-DIVISION", age: 810 },
-                { id: 4, name: "SL-01", customer: "MTCC TSD", docked: "21-Jul-25", type: "INTER-DIVISION", age: 92 },
-                { id: 5, name: "NIYAAMA 5", customer: "MTCC TSD", docked: "16-Aug-25", type: "INTER-DIVISION", age: 66 },
-                { id: 6, name: "RTL 107", customer: "MTCC TSD", docked: "25-Aug-25", type: "INTER-DIVISION", age: 57 },
-                { id: 7, name: "RTL 106", customer: "MTCC TSD", docked: "25-Sep-25", type: "INTER-DIVISION", age: 26 },
-                { id: 8, name: "SL-07", customer: "MTCC TSD", docked: "07-OCT-25", type: "INTER-DIVISION", age: 14 },
-                { id: 9, name: "AILA", customer: "MTCC TSD", docked: "19-OCT-25", type: "INTER-DIVISION", age: 3 },
-                { id: 10, name: "JUPITER", customer: "MTCC TSD", docked: "21-OCT-25", type: "INTER-DIVISION", age: 1 },
-                { id: 11, name: "EXPRESS-2", customer: "MTCC TSD", docked: "22-OCT-25", type: "INTER-DIVISION", age: 0 },
-                { id: 12, name: "LIBRA", customer: "STATE TRADING ORGANIZATION PLC", docked: "23-Sep-25", type: "EXTERNAL", age: 28 },
-                { id: 13, name: "MALAAHAA", customer: "SEAMAT PVT LTD", docked: "19-OCT-25", type: "EXTERNAL", age: 2 },
-                { id: 14, name: "VIDHUVARU", customer: "WAVE TIDE MALDIVES PVT LTD", docked: "19-Oct-25", type: "EXTERNAL", age: 2 },
-                { id: 15, name: "HEALTH-1", customer: "URH", docked: "21-Oct-25", type: "EXTERNAL", age: 2 },
-            ],
-            projectUpdates: [
-                {
-                    title: "WO System (Target 31 Dec 2025)",
-                    details: "Work has resumed as of 4th October 2025. Galley and washroom construction are currently ongoing."
-                },
-                {
-                    title: "Management Approval Status",
-                    details: "Purchase Order (PO) has been approved by finance; \u2022\u00A0\u00A0\u00A0\textbf{status on management approval is still pending}."
-                },
-            ],
-            pendingPR: [
-                { vessel: "22M FERRY", unit: "CPS", pr: "PR078375", remarks: "Electrical Items. No further update provided." },
-                { vessel: "SL-05", unit: "OSU", pr: "MTR-029070", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Partial Delivery:} 21 out of 55 items received; 5 items partially received. \u2022\u00A0\u00A0\u00A0Original order placed via Airfreight on 14-09-2025." },
-                { vessel: "RTL 107", unit: "MRW", pr: "MTR-029148", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Lead Time Issue:} 11 items have a lead time exceeding three months. \u2022\u00A0\u00A0\u00A0Remaining items are awaiting shipping documents. Airfreight requested." },
-                { vessel: "RTL 107", unit: "MRW", pr: "PR077318", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Payment Pending:} Batteries and battery cables (0/13 items delivered) are pending payment. \u2022\u00A0\u00A0\u00A0All other items have raised POs, except for the 1\" spring hose." },
-                { vessel: "RTL 106", unit: "MRW", pr: "MTR-029314", remarks: "Awaiting supplier confirmation on lead time." },
-                { vessel: "RTL 106", unit: "MRW", pr: "MTR-029731", remarks: "Order for ROD ASSY, CONNECTING is pending." },
-            ]
-        };
-        // --- END DATA SOURCE ---
 
-        // --- 2. RENDERING FUNCTIONS ---
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, orderBy, doc, getDoc, setDoc, deleteDoc, updateDoc, where, getDocs, runTransaction, FieldValue, serverTimestamp, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
-        function renderHeader() {
-            document.getElementById('report-date').textContent = reportData.date;
+        // Global Firebase and App Variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Data and State
+        let db, auth, userId = null;
+        let allVessels = [];
+        let filteredVessels = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let sortKey = 'id';
+        let sortDirection = 'asc';
+
+        // Set Firebase Log Level
+        setLogLevel('Debug');
+
+        // --- UTILITIES ---
+
+        // Converts a date string (YYYY-MM-DD) or Date object to a number of days ago
+        function calculateAge(dockedDate) {
+            const date = new Date(dockedDate);
+            const today = new Date();
+            // Clear time components for accurate day calculation
+            today.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0);
+
+            if (isNaN(date.getTime())) return 0;
+
+            const diffTime = Math.abs(today.getTime() - date.getTime());
+            // Convert time difference to days, round down for completeness
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
         }
 
-        function renderKPIs() {
-            const container = document.getElementById('kpi-dashboard');
-            const kpis = [
-                { label: "Total Vessels on Dock", value: reportData.kpis.totalVessels, color: "bg-blue-500" },
-                { label: "Longest Docking Age (Days)", value: reportData.kpis.longestDockingDays, color: "bg-red-500" },
-                { label: "Internal / Inter-Division Mix", value: reportData.kpis.internalVessels + " Vessels", color: "bg-green-500" },
-                { label: "External Customer Mix", value: reportData.kpis.externalVessels + " Vessels", color: "bg-yellow-500" }
-            ];
+        // --- FIREBASE INITIALIZATION AND AUTH ---
 
-            kpis.forEach(kpi => {
-                const card = `
-                    <div class="p-6 text-white ${kpi.color} rounded-xl shadow-md transform transition duration-300 hover:scale-[1.02]">
-                        <p class="text-sm opacity-80">${kpi.label}</p>
-                        <p class="text-3xl font-bold mt-1">${kpi.value}</p>
-                    </div>
-                `;
-                container.innerHTML += card;
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Auth Check and Sign-in
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('user-id-display').textContent = `User ID: ${userId.substring(0, 8)}...`;
+                        startListeningForVessels();
+                    } else {
+                        console.error("Authentication failed or user signed out.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or during authentication:", error);
+            }
+        }
+
+        // --- DATA LOGIC: CRUD & LISTENING ---
+
+        function getVesselsCollectionRef() {
+            if (!db || !userId) return null;
+            // Public data path: /artifacts/{appId}/public/data/vessels
+            return collection(db, 'artifacts', appId, 'public', 'data', 'vessels');
+        }
+
+        function startListeningForVessels() {
+            const vesselsRef = getVesselsCollectionRef();
+            if (!vesselsRef) return;
+            
+            // Listen for all vessels
+            const q = query(vesselsRef);
+            
+            const loadingIndicator = document.getElementById('loading-indicator');
+            loadingIndicator.classList.remove('hidden');
+
+            onSnapshot(q, (snapshot) => {
+                const vessels = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    vessels.push({
+                        id: doc.id,
+                        name: data.name,
+                        customer: data.customer,
+                        docked: data.docked,
+                        type: data.type,
+                        dockedDate: new Date(data.docked),
+                        age: calculateAge(data.docked)
+                    });
+                });
+                allVessels = vessels;
+                applyFiltersAndRender();
+                loadingIndicator.classList.add('hidden');
+                console.log(`Loaded ${allVessels.length} vessel records.`);
+            }, (error) => {
+                console.error("Error listening to vessels collection:", error);
+                loadingIndicator.textContent = "Error loading data.";
             });
         }
 
-        function renderAgenda() {
-            const list = document.getElementById('agenda-list');
-            list.innerHTML = reportData.agenda.map((item, index) => `
-                <li class="flex items-start">
-                    <span class="font-bold text-blue-700 mr-2">${index + 1}.</span>
-                    <p class="text-gray-700">${item}</p>
-                </li>
-            `).join('');
+        async function saveVessel(docId, data) {
+            const vesselsRef = getVesselsCollectionRef();
+            if (!vesselsRef) return;
+            
+            const vesselData = {
+                name: data.name,
+                customer: data.customer,
+                docked: data.docked, // Stored as YYYY-MM-DD string for simplicity
+                type: data.type,
+                updatedAt: serverTimestamp(),
+                userId: userId
+            };
+
+            try {
+                if (docId) {
+                    // Update existing document
+                    await updateDoc(doc(vesselsRef, docId), vesselData);
+                    return { success: true, message: "Vessel updated successfully." };
+                } else {
+                    // Add new document
+                    const newDocRef = doc(vesselsRef);
+                    // Generate a sequential ID for display purposes (not Firestore ID)
+                    const newVesselId = allVessels.length + 1; 
+                    vesselData.displayId = newVesselId; // Add display ID
+                    await setDoc(newDocRef, vesselData);
+                    return { success: true, message: "Vessel added successfully." };
+                }
+            } catch (error) {
+                console.error("Error saving vessel:", error);
+                return { success: false, message: `Error saving vessel: ${error.message}` };
+            }
         }
 
-        function renderProjectUpdates() {
-            const list = document.getElementById('project-updates-list');
-            list.innerHTML = reportData.projectUpdates.map(update => `
-                <li class="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50/50 rounded-lg">
-                    <p class="font-semibold text-gray-800">${update.title}</p>
-                    <p class="text-sm text-gray-600">${update.details}</p>
-                </li>
-            `).join('');
+        async function deleteVessel(id) {
+            if (!confirm("Are you sure you want to delete this vessel record?")) return;
+            
+            const vesselsRef = getVesselsCollectionRef();
+            if (!vesselsRef) return;
+            
+            try {
+                await deleteDoc(doc(vesselsRef, id));
+                console.log("Vessel deleted.");
+            } catch (error) {
+                console.error("Error deleting vessel:", error);
+            }
         }
 
+
+        // --- UI RENDERING & FILTERING ---
+
+        function sortVessels(key, direction) {
+            filteredVessels.sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+                
+                if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                let comparison = 0;
+                if (valA > valB) comparison = 1;
+                else if (valA < valB) comparison = -1;
+
+                return direction === 'desc' ? comparison * -1 : comparison;
+            });
+        }
+
+        function applyFiltersAndRender() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const customerType = document.getElementById('customer-type-filter').value;
+            
+            filteredVessels = allVessels.filter(vessel => {
+                const matchesSearch = !searchTerm || 
+                                     vessel.name.toLowerCase().includes(searchTerm) || 
+                                     vessel.customer.toLowerCase().includes(searchTerm);
+                
+                const matchesType = !customerType || vessel.type === customerType;
+                
+                return matchesSearch && matchesType;
+            });
+
+            // Re-apply sorting
+            sortVessels(sortKey, sortDirection);
+            
+            // Reset page after filtering
+            currentPage = 1;
+            renderVesselTable();
+            renderKPIs();
+        }
+
+        function renderKPIs() {
+            // Aggregate KPIs from the currently filtered list
+            const totalVessels = filteredVessels.length;
+            const longestAge = totalVessels > 0 ? Math.max(...filteredVessels.map(v => v.age)) : 0;
+            const internalVessels = filteredVessels.filter(v => v.type === 'INTERNAL' || v.type === 'INTER-DIVISION').length;
+            const externalVessels = filteredVessels.filter(v => v.type === 'EXTERNAL').length;
+
+            const kpiData = [
+                { label: "Total Vessels (Filtered)", value: totalVessels, color: "bg-blue-600", icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.5 3-9s-1.343-9-3-9m0 18v-5M9 6h.01M15 6h.01M12 21.954V12" /></svg>` },
+                { label: "Longest Docking Age (Days)", value: longestAge, color: "bg-red-600", icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>` },
+                { label: "Internal/Inter-Division Mix", value: internalVessels + " Vessels", color: "bg-green-600", icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-7 0v2m0-2h7.5M10 6V4m4 6h.01M10 12h.01M10 16h.01M14 12h.01M14 16h.01M4 20h16" /></svg>` },
+                { label: "External Customer Mix", value: externalVessels + " Vessels", color: "bg-yellow-600", icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>` }
+            ];
+
+            const container = document.getElementById('kpi-dashboard');
+            container.innerHTML = kpiData.map(kpi => `
+                <div class="p-6 text-white ${kpi.color} rounded-xl shadow-md flex items-center justify-between transform transition duration-300 hover:scale-[1.02] cursor-default">
+                    <div>
+                        <p class="text-sm opacity-90">${kpi.label}</p>
+                        <p class="text-3xl font-bold mt-1">${kpi.value}</p>
+                    </div>
+                    ${kpi.icon}
+                </div>
+            `).join('');
+        }
+        
         function renderVesselTable() {
             const tbody = document.getElementById('vessel-table-body');
-            tbody.innerHTML = reportData.vesselStatus.map(vessel => {
-                // Determine row color based on type and age
-                let rowClasses = 'whitespace-nowrap text-sm text-gray-700';
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const vesselsToDisplay = filteredVessels.slice(start, end);
+            const totalPages = Math.ceil(filteredVessels.length / itemsPerPage);
+
+            tbody.innerHTML = vesselsToDisplay.map((vessel, index) => {
+                const rowId = start + index + 1; // Sequential display ID
                 let ageClass = 'text-gray-700';
-                if (vessel.type === 'EXTERNAL') {
-                    rowClasses += ' bg-yellow-50/50';
-                }
                 if (vessel.age > 800) {
                     ageClass = 'text-red-600 font-semibold';
                 } else if (vessel.age > 50) {
                     ageClass = 'text-orange-600';
                 }
 
+                let typeColor = '';
+                if (vessel.type === 'EXTERNAL') typeColor = 'bg-yellow-100 text-yellow-800';
+                else if (vessel.type === 'INTERNAL') typeColor = 'bg-green-100 text-green-800';
+                else typeColor = 'bg-blue-100 text-blue-800';
+
                 return `
-                    <tr class="${rowClasses}">
-                        <td class="px-3 py-3 font-medium text-center">${vessel.id}</td>
+                    <tr id="vessel-${vessel.id}">
+                        <td class="px-3 py-3 font-medium text-center">${rowId}</td>
                         <td class="px-6 py-3 font-medium text-blue-800">${vessel.name}</td>
-                        <td class="px-6 py-3">${vessel.customer}</td>
-                        <td class="px-6 py-3">${vessel.docked}</td>
+                        <td class="px-6 py-3 text-gray-700">${vessel.customer}</td>
                         <td class="px-6 py-3">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vessel.type === 'EXTERNAL' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeColor}">
                                 ${vessel.type.replace('-', ' ')}
                             </span>
                         </td>
                         <td class="px-3 py-3 text-center ${ageClass}">${vessel.age}</td>
+                        <td class="px-3 py-3 text-center whitespace-nowrap">
+                            <button onclick="editVessel('${vessel.id}')" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</button>
+                            <button onclick="deleteVessel('${vessel.id}')" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
                     </tr>
                 `;
             }).join('');
-        }
+            
+            // Render Pagination Controls
+            document.getElementById('page-info').textContent = filteredVessels.length === 0 ? "No records found" : `Page ${currentPage} of ${totalPages} (${filteredVessels.length} total)`;
+            document.getElementById('prev-page-btn').disabled = currentPage === 1;
+            document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
 
-        function renderPRTable() {
-            const tbody = document.getElementById('pr-table-body');
-            tbody.innerHTML = reportData.pendingPR.map(item => {
-                // Highlight critical remarks
-                let remarksHtml = item.remarks;
-                if (item.remarks.includes('Payment Pending') || item.remarks.includes('Lead Time Issue')) {
-                    remarksHtml = `<span class="text-red-600 font-medium">${item.remarks}</span>`;
+            // Update Sort Indicators
+            document.querySelectorAll('th[data-sort]').forEach(header => {
+                header.classList.remove('text-blue-600');
+                header.innerHTML = header.textContent.replace(' ▲', '').replace(' ▼', '');
+                if (header.getAttribute('data-sort') === sortKey) {
+                    header.classList.add('text-blue-600');
+                    header.innerHTML = `${header.textContent} ${sortDirection === 'asc' ? ' ▲' : ' ▼'}`;
                 }
-
-                return `
-                    <tr>
-                        <td class="px-4 py-3 whitespace-nowrap font-medium text-blue-800">${item.vessel}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${item.unit}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">${item.pr}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 max-w-lg leading-relaxed">${remarksHtml}</td>
-                    </tr>
-                `;
-            }).join('');
+            });
         }
 
-        // --- 3. INITIALIZATION ---
-        window.onload = function() {
-            renderHeader();
-            renderKPIs();
-            renderAgenda();
-            renderProjectUpdates();
-            renderVesselTable();
-            renderPRTable();
-        };
+        // --- MODAL AND FORM HANDLING ---
 
+        const dataModal = document.getElementById('data-modal');
+        const vesselForm = document.getElementById('vessel-form');
+        const formMessage = document.getElementById('form-message');
+
+        function openModal(docId = null) {
+            const title = document.getElementById('modal-title');
+            const saveBtn = document.getElementById('save-button');
+            vesselForm.reset();
+            formMessage.classList.add('hidden');
+            document.getElementById('vessel-doc-id').value = docId || '';
+
+            if (docId) {
+                const vessel = allVessels.find(v => v.id === docId);
+                title.textContent = "Edit Vessel Data";
+                saveBtn.textContent = "Update Vessel";
+                if (vessel) {
+                    document.getElementById('vessel-name').value = vessel.name;
+                    document.getElementById('customer').value = vessel.customer;
+                    document.getElementById('docked-on').value = vessel.docked;
+                    document.getElementById('customer-type').value = vessel.type;
+                }
+            } else {
+                title.textContent = "Add New Vessel";
+                saveBtn.textContent = "Save Vessel";
+            }
+            dataModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            dataModal.classList.add('hidden');
+        }
+
+        vesselForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const docId = document.getElementById('vessel-doc-id').value;
+            const data = {
+                name: document.getElementById('vessel-name').value,
+                customer: document.getElementById('customer').value,
+                docked: document.getElementById('docked-on').value,
+                type: document.getElementById('customer-type').value,
+            };
+
+            document.getElementById('save-button').disabled = true;
+            document.getElementById('save-button').textContent = docId ? 'Updating...' : 'Saving...';
+            formMessage.classList.add('hidden');
+
+            const result = await saveVessel(docId, data);
+            
+            document.getElementById('save-button').disabled = false;
+            document.getElementById('save-button').textContent = docId ? 'Update Vessel' : 'Save Vessel';
+
+            if (result.success) {
+                closeModal();
+            } else {
+                formMessage.textContent = result.message;
+                formMessage.classList.remove('hidden');
+            }
+        });
+
+        // Expose CRUD operations globally for table actions
+        window.openModal = openModal;
+        window.editVessel = (id) => openModal(id);
+        window.deleteVessel = deleteVessel;
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('open-modal-btn').addEventListener('click', () => openModal());
+        document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+        dataModal.addEventListener('click', (e) => {
+            if (e.target === dataModal) closeModal();
+        });
+
+        // Filter Event Listeners
+        document.getElementById('search-input').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('customer-type-filter').addEventListener('change', applyFiltersAndRender);
+        document.getElementById('reset-filters-btn').addEventListener('click', () => {
+            document.getElementById('search-input').value = '';
+            document.getElementById('customer-type-filter').value = '';
+            applyFiltersAndRender();
+        });
+
+        // Pagination Event Listeners
+        document.getElementById('prev-page-btn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderVesselTable();
+            }
+        });
+
+        document.getElementById('next-page-btn').addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredVessels.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderVesselTable();
+            }
+        });
+
+        // Sort Event Listeners
+        document.querySelectorAll('th[data-sort]').forEach(header => {
+            header.addEventListener('click', () => {
+                const newSortKey = header.getAttribute('data-sort');
+                if (newSortKey === sortKey) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortKey = newSortKey;
+                    sortDirection = 'asc';
+                }
+                applyFiltersAndRender();
+            });
+        });
+
+        // --- INIT ---
+        window.onload = initializeFirebase;
     </script>
-
 </body>
 </html>
