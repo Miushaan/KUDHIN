@@ -3,21 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Dockyard Update - Editable Dashboard</title>
+    <title>Daily Dockyard Update - Local Storage Dashboard</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Firebase Modules -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Expose Firebase functions globally for use in the main script block
-        window.firebase = {
-            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs, setLogLevel
-        };
-    </script>
+    
     <style>
         /* Custom styles for aesthetic */
         body {
@@ -98,7 +87,7 @@
                 <h1 class="text-3xl md:text-4xl font-extrabold text-primary">
                     Dockyard Operations Dashboard
                 </h1>
-                <p class="text-secondary mt-1">Week 43 - Real-time Data</p>
+                <p class="text-secondary mt-1">Week 43 - Local Data Storage (Not shared)</p>
             </div>
             <div id="view-switcher" class="flex space-x-2">
                 <button id="preview-view-btn" class="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white shadow-md active-view-btn">
@@ -109,14 +98,6 @@
                 </button>
             </div>
         </header>
-
-        <div id="loader" class="text-center p-10 text-xl text-indigo-600 font-semibold hidden">
-            <svg class="animate-spin h-5 w-5 mr-3 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Loading Data...
-        </div>
 
         <div id="app-container">
             <!-- Preview View (Dashboard) -->
@@ -145,7 +126,6 @@
                 <div id="database-content" class="min-h-[400px]">
                     <!-- Editable form will be rendered here -->
                 </div>
-                <div id="user-id-display" class="mt-6 text-xs text-gray-500 text-right"></div>
             </div>
         </div>
 
@@ -160,92 +140,12 @@
 
     <script type="text/javascript">
 
-        // --- GLOBAL APP STATE & FIREBASE VARS ---
-        let db, auth;
+        // --- GLOBAL APP STATE & CONFIG ---
+        const LOCAL_STORAGE_KEY = 'dockyardData';
         let currentView = 'preview'; // 'preview' or 'database'
-        let appData = {}; // Firestore data cache
+        let appData = {}; // Local data cache
         let currentCollection = 'docked'; // Currently selected collection for database view
         let currentSort = { key: null, direction: 'asc', tab: null };
-
-        // --- INITIAL DATA (Used to seed Firestore on first run) ---
-        const initialVesselData = {
-            docked: [
-                { vesselName: "MAHAA KORAKALI", customer: "MTCC ERD", dockedOn: "2021-08-16", customerType: "INTERNAL", age: 1527, initial: true },
-                { vesselName: "NIYAAMA 2", customer: "MTCC TSD", dockedOn: "2024-03-10", customerType: "INTER-DIVISION", age: 593, initial: true },
-                { vesselName: "YANMAR BOAT", customer: "MTCC TSD", dockedOn: "2024-05-18", customerType: "INTER-DIVISION", age: 435, initial: true },
-                { vesselName: "SL-01", customer: "MTCC OSU", dockedOn: "2024-05-24", customerType: "INTER-DIVISION", age: 429, initial: true },
-                { vesselName: "NIYAAMA 5", customer: "MTCC TSD", dockedOn: "2024-06-03", customerType: "INTER-DIVISION", age: 419, initial: true },
-                { vesselName: "RTL 107", customer: "MTCC MRW", dockedOn: "2024-07-28", customerType: "INTER-DIVISION", age: 364, initial: true },
-                { vesselName: "RTL 106", customer: "MTCC MRW", dockedOn: "2024-09-08", customerType: "INTER-DIVISION", age: 302, initial: true },
-                { vesselName: "SL-07", customer: "MTCC OSU", dockedOn: "2024-10-15", customerType: "INTER-DIVISION", age: 285, initial: true },
-                { vesselName: "AILA", customer: "MTCC TSD", dockedOn: "2025-01-20", customerType: "INTER-DIVISION", age: 277, initial: true },
-                { vesselName: "JUPITER", customer: "ISLAND AVIATION", dockedOn: "2025-02-23", customerType: "EXTERNAL", age: 243, initial: true },
-                { vesselName: "LIBRA", customer: "J.A TRADING PVT LTD", dockedOn: "2025-05-23", customerType: "EXTERNAL", age: 154, initial: true },
-                { vesselName: "MALAAHAA", customer: "GALAXY ENTERPRISES PVT LTD", dockedOn: "2025-07-20", customerType: "EXTERNAL", age: 96, initial: true },
-                { vesselName: "VIDHUVARU", customer: "STELCO", dockedOn: "2025-09-03", customerType: "EXTERNAL", age: 51, initial: true },
-                { vesselName: "HEALTH-1", customer: "HPA", dockedOn: "2025-10-18", customerType: "EXTERNAL", age: 6, initial: true },
-                { vesselName: "EXPRESS-2", customer: "MTCC TSD", dockedOn: "2025-10-22", customerType: "INTER-DIVISION", age: 2, initial: true },
-            ],
-            undocked: [
-                { vesselName: "KOIMALA-6", owner: "MTCC DREDGING", undockedOn: "2025-10-01", initial: true },
-                { vesselName: "MARUTU-2", owner: "NAZMEEL MOHAMED", undockedOn: "2025-10-02", initial: true },
-                { vesselName: "K.A. MAIDOO", owner: "K.A TRADING", undockedOn: "2025-10-02", initial: true },
-                { vesselName: "KANDHARI", owner: "AISHATH SUAD", undockedOn: "2025-10-05", initial: true },
-                { vesselName: "DHONKANDHAARU", owner: "MIFCO", undockedOn: "2025-10-07", initial: true },
-                { vesselName: "KOIMALA-1", owner: "MTCC DREDGING", undockedOn: "2025-10-07", initial: true },
-                { vesselName: "BODUMAIYA", owner: "AHMED ADAM", undockedOn: "2025-10-08", initial: true },
-                { vesselName: "MALIKHA-2", owner: "ADDU SHIPPING", undockedOn: "2025-10-09", initial: true },
-                { vesselName: "KOIMALA 5", owner: "MTCC TSD", undockedOn: "2025-10-12", initial: true },
-                { vesselName: "KALHIHI", owner: "MTCC TSD", undockedOn: "2025-10-13", initial: true },
-                { vesselName: "VILUFUSHI", owner: "ISLAND AVIATION", undockedOn: "2025-10-14", initial: true },
-                { vesselName: "YAGEEN-1", owner: "MTCC TSD", undockedOn: "2025-10-15", initial: true },
-                { vesselName: "K.A. TRADING", owner: "K.A TRADING", undockedOn: "2025-10-17", initial: true },
-                { vesselName: "ACHILLES", owner: "BLUE MARINE", undockedOn: "2025-10-20", initial: true },
-                { vesselName: "EXPRESS-1", owner: "MTCC TSD", undockedOn: "2025-10-21", initial: true },
-            ],
-            planned: [
-                { vesselName: "NALA 7", owner: "NALAHIYA TRADING PVT LTD", requestedDocking: "2025-10-25", estUndocking: "2025-10-26", sizeFt: 117, initial: true },
-                { vesselName: "MAARANGA", owner: "STO", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 144.75, initial: true },
-                { vesselName: "AJAAZ QUEEN", owner: "AJAAZ FUEL PVT LTD", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 61.66, initial: true },
-                { vesselName: "BONTHI-2", owner: "MOHAMED ABDUL KAREEM", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 44.77, initial: true },
-                { vesselName: "CRUISER-5", owner: "HASSAN ZAREER", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 48.38, initial: true },
-                { vesselName: "HIRIWAVE GREY", owner: "HUSHAM ABDUL SHAKOOR", requestedDocking: "DELAYED", estUndocking: "-", sizeFt: 38.21, initial: true },
-                { vesselName: "FUSCO", owner: "MIFCO", requestedDocking: "ON-GOING", estUndocking: "-", sizeFt: 25.92, initial: true },
-            ],
-            revenue: [
-                { customer: "ZAHIRA MOHAMED", vessel: "MAZI", value: 58280.94, status: "Pending", initial: true },
-                { customer: "NAZMEEL MOHAMED", vessel: "JUMBO", value: 40387.89, status: "Pending", initial: true },
-                { customer: "CENTURION TRANSPORT SOLUTION PVT LTD", vessel: "MOONIMAA", value: 33377.76, status: "Pending", initial: true },
-                { customer: "UKAS MALDIVES PVT LTD", vessel: "HAMATHI", value: 16182.85, status: "Pending", initial: true },
-                { customer: "IBRAHIM IMTHIYAZ", vessel: "WINTER", value: 14675.88, status: "Pending", initial: true },
-                { customer: "MERIDIAM SERVICES PVT LTD", vessel: "RIYA-11", value: 14619.48, status: "Pending", initial: true },
-                { customer: "V.A.M AND COMPANY PVT LTD", vessel: "CONCORD", value: 5598.28, status: "Pending", initial: true },
-                { customer: "ALI RASHEED", vessel: "BAHTHI", value: 4646.18, status: "Pending", initial: true },
-                { customer: "HUSHAM ABDUL SHAKOOR", vessel: "HIRIWAVE GREY", value: 3881.67, status: "Pending", initial: true },
-            ],
-            projects: [
-                { type: "External Project", name: "LIBRA", status: "74% Complete (Delayed due to rain)", details: "Est. Completion: Oct 24, 2025. Pending: Rudder stock, Propeller/shaft/cutless bearing, Engine installation/alignment.", initial: true },
-                { type: "External Project", name: "MPL VEERU 2", status: "New Work", details: "Work started on Oct 21, 2025.", initial: true },
-                { type: "Internal Plan", name: "SL-05 (Ferry Dhoani)", status: "Scope Change", details: "Planning major overhaul instead of top-overhaul (10,000 engine hours closing in).", initial: true },
-                { type: "Internal Plan", name: "URANUS", status: "New Work", details: "Work started on Oct 21, 2025. Tasks: engine troubleshooting and mixing elbow replacement.", initial: true },
-                { type: "Internal Plan", name: "KOIMALA-2", status: "Planned", details: "Major fiberglass repair planned after KOIMALA-1 work is complete.", initial: true },
-                { type: "Vessel Update", name: "JUPITER", status: "On Hold", details: "Undocking put on hold (Oct 22, 2025) after hull damage was found.", initial: true },
-                { type: "Vessel Update", name: "RTL 107", status: "On Hold", details: "Engine works on hold until 'PIN' spare part is received (on order).", initial: true },
-                { type: "Vessel Update", name: "SL-01", status: "98% Complete", details: "Fiber works nearing completion (as of Oct 25, 2025).", initial: true },
-                { type: "Pending BOQ", name: "LIBRA", status: "Quotation Pending", details: "BOQ submitted. Quotation value MVR 189,175.27 (With GST).", initial: true },
-                { type: "Pending BOQ", name: "VIDHUVARU", status: "BOQ Pending", details: "Awaiting Bill of Quantities.", initial: true },
-                { type: "Pending BOQ", name: "KSR MULTICAT", status: "BOQ Pending", details: "Awaiting Bill of Quantities.", initial: true },
-            ],
-            inspection: [
-                { vessel: "EXPLORER 2", location: "Thilafushi", status: "Completed", date: "2025-09-09", initial: true },
-                { vessel: "MAHAA KALAMINJA", location: "Gdh. Thinadhoo", status: "Completed", date: "Unknown", initial: true },
-                { vessel: "GURAAB", location: "K. Male'", status: "Pending", date: "Unknown", initial: true },
-                { vessel: "ALUMINIUM BOAT", location: "Soneva Jani Resort", status: "Completed", date: "2025-09-14", initial: true },
-                { vessel: "OCEAN RANGER", location: "FABRICATION/INSTALLATION OF SS RAILING", status: "Completed", date: "2025-09-14", initial: true },
-                { vessel: "REDHAN BOAT", location: "K.Funadhoo", status: "Completed", date: "2025-10-02", initial: true },
-                { vessel: "ONE & ONLY REETHI RAH RESORT", location: "K.Male'", status: "Inspected", date: "2025-10-09", initial: true },
-            ]
-        };
 
         // --- DOM Elements ---
         const tabContent = document.getElementById('tab-content');
@@ -256,9 +156,91 @@
         const previewBtn = document.getElementById('preview-view-btn');
         const databaseBtn = document.getElementById('database-view-btn');
         const collectionSelect = document.getElementById('collection-select');
-        const loader = document.getElementById('loader');
+        
+        // Initial Data (Used to seed Local Storage on first run)
+        const initialVesselData = {
+            docked: [
+                { id: Date.now() + 1, vesselName: "MAHAA KORAKALI", customer: "MTCC ERD", dockedOn: "2021-08-16", customerType: "INTERNAL", age: 1527 },
+                { id: Date.now() + 2, vesselName: "NIYAAMA 2", customer: "MTCC TSD", dockedOn: "2024-03-10", customerType: "INTER-DIVISION", age: 593 },
+                { id: Date.now() + 3, vesselName: "YANMAR BOAT", customer: "MTCC TSD", dockedOn: "2024-05-18", customerType: "INTER-DIVISION", age: 435 },
+                { id: Date.now() + 4, vesselName: "SL-01", customer: "MTCC OSU", dockedOn: "2024-05-24", customerType: "INTER-DIVISION", age: 429 },
+                { id: Date.now() + 5, vesselName: "NIYAAMA 5", customer: "MTCC TSD", dockedOn: "2024-06-03", customerType: "INTER-DIVISION", age: 419 },
+                { id: Date.now() + 6, vesselName: "RTL 107", customer: "MTCC MRW", dockedOn: "2024-07-28", customerType: "INTER-DIVISION", age: 364 },
+                { id: Date.now() + 7, vesselName: "RTL 106", customer: "MTCC MRW", dockedOn: "2024-09-08", customerType: "INTER-DIVISION", age: 302 },
+                { id: Date.now() + 8, vesselName: "SL-07", customer: "MTCC OSU", dockedOn: "2025-10-15", customerType: "INTER-DIVISION", age: 285 },
+                { id: Date.now() + 9, vesselName: "AILA", customer: "MTCC TSD", dockedOn: "2025-01-20", customerType: "INTER-DIVISION", age: 277 },
+                { id: Date.now() + 10, vesselName: "JUPITER", customer: "ISLAND AVIATION", dockedOn: "2025-02-23", customerType: "EXTERNAL", age: 243 },
+                { id: Date.now() + 11, vesselName: "LIBRA", customer: "J.A TRADING PVT LTD", dockedOn: "2025-05-23", customerType: "EXTERNAL", age: 154 },
+                { id: Date.now() + 12, vesselName: "MALAAHAA", customer: "GALAXY ENTERPRISES PVT LTD", dockedOn: "2025-07-20", customerType: "EXTERNAL", age: 96 },
+                { id: Date.now() + 13, vesselName: "VIDHUVARU", customer: "STELCO", dockedOn: "2025-09-03", customerType: "EXTERNAL", age: 51 },
+                { id: Date.now() + 14, vesselName: "HEALTH-1", customer: "HPA", dockedOn: "2025-10-18", customerType: "EXTERNAL", age: 6 },
+                { id: Date.now() + 15, vesselName: "EXPRESS-2", customer: "MTCC TSD", dockedOn: "2025-10-22", customerType: "INTER-DIVISION", age: 2 },
+            ],
+            undocked: [
+                { id: Date.now() + 16, vesselName: "KOIMALA-6", owner: "MTCC DREDGING", undockedOn: "2025-10-01" },
+                { id: Date.now() + 17, vesselName: "MARUTU-2", owner: "NAZMEEL MOHAMED", undockedOn: "2025-10-02" },
+                { id: Date.now() + 18, vesselName: "K.A. MAIDOO", owner: "K.A TRADING", undockedOn: "2025-10-02" },
+                { id: Date.now() + 19, vesselName: "KANDHARI", owner: "AISHATH SUAD", undockedOn: "2025-10-05" },
+                { id: Date.now() + 20, vesselName: "DHONKANDHAARU", owner: "MIFCO", undockedOn: "2025-10-07" },
+                { id: Date.now() + 21, vesselName: "KOIMALA-1", owner: "MTCC DREDGING", undockedOn: "2025-10-07" },
+                { id: Date.now() + 22, vesselName: "BODUMAIYA", owner: "AHMED ADAM", undockedOn: "2025-10-08" },
+                { id: Date.now() + 23, vesselName: "MALIKHA-2", owner: "ADDU SHIPPING", undockedOn: "2025-10-09" },
+                { id: Date.now() + 24, vesselName: "KOIMALA 5", owner: "MTCC TSD", undockedOn: "2025-10-12" },
+                { id: Date.now() + 25, vesselName: "KALHIHI", owner: "MTCC TSD", undockedOn: "2025-10-13" },
+                { id: Date.now() + 26, vesselName: "VILUFUSHI", owner: "ISLAND AVIATION", undockedOn: "2025-10-14" },
+                { id: Date.now() + 27, vesselName: "YAGEEN-1", owner: "MTCC TSD", undockedOn: "2025-10-15" },
+                { id: Date.now() + 28, vesselName: "K.A. TRADING", owner: "K.A TRADING", undockedOn: "2025-10-17" },
+                { id: Date.now() + 29, vesselName: "ACHILLES", owner: "BLUE MARINE", undockedOn: "2025-10-20" },
+                { id: Date.now() + 30, vesselName: "EXPRESS-1", owner: "MTCC TSD", undockedOn: "2025-10-21" },
+            ],
+            planned: [
+                { id: Date.now() + 31, vesselName: "NALA 7", owner: "NALAHIYA TRADING PVT LTD", requestedDocking: "2025-10-25", estUndocking: "2025-10-26", sizeFt: 117 },
+                { id: Date.now() + 32, vesselName: "MAARANGA", owner: "STO", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 144.75 },
+                { id: Date.now() + 33, vesselName: "AJAAZ QUEEN", owner: "AJAAZ FUEL PVT LTD", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 61.66 },
+                { id: Date.now() + 34, vesselName: "BONTHI-2", owner: "MOHAMED ABDUL KAREEM", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 44.77 },
+                { id: Date.now() + 35, vesselName: "CRUISER-5", owner: "HASSAN ZAREER", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 48.38 },
+                { id: Date.now() + 36, vesselName: "HIRIWAVE GREY", owner: "HUSHAM ABDUL SHAKOOR", requestedDocking: "DELAYED", estUndocking: "-", sizeFt: 38.21 },
+                { id: Date.now() + 37, vesselName: "FUSCO", owner: "MIFCO", requestedDocking: "ON-GOING", estUndocking: "-", sizeFt: 25.92 },
+            ],
+            revenue: [
+                { id: Date.now() + 38, customer: "ZAHIRA MOHAMED", vessel: "MAZI", value: 58280.94, status: "Pending" },
+                { id: Date.now() + 39, customer: "NAZMEEL MOHAMED", vessel: "JUMBO", value: 40387.89, status: "Pending" },
+                { id: Date.now() + 40, customer: "CENTURION TRANSPORT SOLUTION PVT LTD", vessel: "MOONIMAA", value: 33377.76, status: "Pending" },
+                { id: Date.now() + 41, customer: "UKAS MALDIVES PVT LTD", vessel: "HAMATHI", value: 16182.85, status: "Pending" },
+                { id: Date.now() + 42, customer: "IBRAHIM IMTHIYAZ", vessel: "WINTER", value: 14675.88, status: "Pending" },
+                { id: Date.now() + 43, customer: "MERIDIAM SERVICES PVT LTD", vessel: "RIYA-11", value: 14619.48, status: "Pending" },
+                { id: Date.now() + 44, customer: "V.A.M AND COMPANY PVT LTD", vessel: "CONCORD", value: 5598.28, status: "Pending" },
+                { id: Date.now() + 45, customer: "ALI RASHEED", vessel: "BAHTHI", value: 4646.18, status: "Pending" },
+                { id: Date.now() + 46, customer: "HUSHAM ABDUL SHAKOOR", vessel: "HIRIWAVE GREY", value: 3881.67, status: "Pending" },
+            ],
+            projects: [
+                { id: Date.now() + 47, type: "External Project", name: "LIBRA", status: "74% Complete (Delayed due to rain)", details: "Est. Completion: Oct 24, 2025. Pending: Rudder stock, Propeller/shaft/cutless bearing, Engine installation/alignment." },
+                { id: Date.now() + 48, type: "External Project", name: "MPL VEERU 2", status: "New Work", details: "Work started on Oct 21, 2025." },
+                { id: Date.now() + 49, type: "Internal Plan", name: "SL-05 (Ferry Dhoani)", status: "Scope Change", details: "Planning major overhaul instead of top-overhaul (10,000 engine hours closing in)." },
+                { id: Date.now() + 50, type: "Internal Plan", name: "URANUS", status: "New Work", details: "Work started on Oct 21, 2025. Tasks: engine troubleshooting and mixing elbow replacement." },
+                { id: Date.now() + 51, type: "Internal Plan", name: "KOIMALA-2", status: "Planned", details: "Major fiberglass repair planned after KOIMALA-1 work is complete." },
+                { id: Date.now() + 52, type: "Vessel Update", name: "JUPITER", status: "On Hold", details: "Undocking put on hold (Oct 22, 2025) after hull damage was found." },
+                { id: Date.now() + 53, type: "Vessel Update", name: "RTL 107", status: "On Hold", details: "Engine works on hold until 'PIN' spare part is received (on order)." },
+                { id: Date.now() + 54, type: "Vessel Update", name: "SL-01", status: "98% Complete", details: "Fiber works nearing completion (as of Oct 25, 2025)." },
+                { id: Date.now() + 55, type: "Pending BOQ", name: "LIBRA", status: "Quotation Pending", details: "BOQ submitted. Quotation value MVR 189,175.27 (With GST)." },
+                { id: Date.now() + 56, type: "Pending BOQ", name: "VIDHUVARU", status: "BOQ Pending", details: "Awaiting Bill of Quantities." },
+                { id: Date.now() + 57, type: "Pending BOQ", name: "KSR MULTICAT", status: "BOQ Pending", details: "Awaiting Bill of Quantities." },
+            ],
+            inspection: [
+                { id: Date.now() + 58, vessel: "EXPLORER 2", location: "Thilafushi", status: "Completed", date: "2025-09-09" },
+                { id: Date.now() + 59, vessel: "MAHAA KALAMINJA", location: "Gdh. Thinadhoo", status: "Completed", date: "Unknown" },
+                { id: Date.now() + 60, vessel: "GURAAB", location: "K. Male'", status: "Pending", date: "Unknown" },
+                { id: Date.now() + 61, vessel: "ALUMINIUM BOAT", location: "Soneva Jani Resort", status: "Completed", date: "2025-09-14" },
+                { id: Date.now() + 62, vessel: "OCEAN RANGER", location: "FABRICATION/INSTALLATION OF SS RAILING", status: "Completed", date: "2025-09-14" },
+                { id: Date.now() + 63, vessel: "REDHAN BOAT", location: "K.Funadhoo", status: "Completed", date: "2025-10-02" },
+                { id: Date.now() + 64, vessel: "ONE & ONLY REETHI RAH RESORT", location: "K.Male'", status: "Inspected", date: "2025-10-09" },
+            ]
+        };
+
 
         // --- UTILITY FUNCTIONS ---
+
+        const generateUniqueId = () => Date.now() + Math.floor(Math.random() * 1000000);
 
         const formatCurrency = (value) => {
             if (typeof value === 'number') {
@@ -272,7 +254,8 @@
                 return dateString;
             }
             try {
-                const date = new Date(dateString.replace(/(\d{4})-(\d{2})-(\d{2})/, '$1/$2/$3'));
+                // Ensure date parsing works correctly across browsers for YYYY-MM-DD
+                const date = new Date(dateString.replace(/-/g, '/'));
                 const options = { year: 'numeric', month: 'short', day: 'numeric' };
                 return date.toLocaleDateString('en-US', options);
             } catch (e) {
@@ -280,19 +263,32 @@
             }
         };
 
+        const getAge = (dockedOn) => {
+            if (!dockedOn || dockedOn.length < 10) return 0;
+            try {
+                const oneDay = 24 * 60 * 60 * 1000; // milliseconds in a day
+                const today = new Date();
+                const dockedDate = new Date(dockedOn.replace(/-/g, '/'));
+                const diffDays = Math.round(Math.abs((today - dockedDate) / oneDay));
+                return diffDays;
+            } catch (e) {
+                return 0;
+            }
+        };
+
         const generateFieldInput = (key, value, docId) => {
             let type = 'text';
             let classes = 'p-1 border border-gray-300 rounded-md w-full focus:ring-indigo-500 focus:border-indigo-500';
             
-            if (typeof value === 'number' || key.toLowerCase().includes('age') || key.toLowerCase().includes('sizeft')) {
+            if (typeof value === 'number' || key.toLowerCase().includes('sizeft')) {
                 type = 'number';
                 classes += ' text-right';
             } else if (key.toLowerCase().includes('date') || key.toLowerCase().includes('on')) {
                 type = 'date';
             }
 
-            // Exclude Firebase-specific and calculated fields from direct editing
-            if (key === 'id' || key === 'initial' || key === 'age') {
+            // Exclude fixed fields from direct editing
+            if (key === 'id' || key === 'age') {
                 return `<span class="${classes} bg-gray-100 italic text-gray-500">${value}</span>`;
             }
 
@@ -309,148 +305,131 @@
             return display;
         }
 
-        // --- FIREBASE CRUD & LISTENING ---
+        // --- LOCAL STORAGE DATA MANAGEMENT ---
 
-        const initializeFirebase = async () => {
-            loader.classList.remove('hidden');
+        const loadDataFromLocalStorage = () => {
             try {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase configuration is missing. Cannot initialize database.");
-                    document.getElementById('app-container').innerHTML = '<p class="text-red-600 p-4">Database initialization failed: Configuration missing.</p>';
-                    return;
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (storedData) {
+                    return JSON.parse(storedData);
                 }
-
-                const app = firebase.initializeApp(firebaseConfig);
-                db = firebase.getFirestore(app);
-                auth = firebase.getAuth(app);
-                firebase.setLogLevel('Debug');
-
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-                if (initialAuthToken) {
-                    await firebase.signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await firebase.signInAnonymously(auth);
-                }
-
-                const userId = auth.currentUser?.uid || crypto.randomUUID();
-                document.getElementById('user-id-display').textContent = `Authenticated User ID: ${userId}`;
-
-                // Start listening to all collections
-                const collections = ['docked', 'undocked', 'planned', 'revenue', 'projects', 'inspection'];
-                collections.forEach(colName => listenToCollection(colName, appId));
-
             } catch (e) {
-                console.error("Firebase initialization failed:", e);
-                document.getElementById('app-container').innerHTML = `<p class="text-red-600 p-4">Database initialization failed: ${e.message}</p>`;
-            } finally {
-                loader.classList.add('hidden');
+                console.error("Error loading data from local storage:", e);
+                // Fallback to initial data if storage is corrupted
+                return null;
             }
+            return null;
         };
 
-        const listenToCollection = (colName, appId) => {
-            // Public data path: /artifacts/{appId}/public/data/{colName}
-            const colRef = firebase.collection(db, `artifacts/${appId}/public/data/${colName}`);
-
-            firebase.onSnapshot(colRef, async (snapshot) => {
-                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                // Check if collection is empty on first load and populate
-                if (data.length === 0 && initialVesselData[colName]) {
-                    console.log(`Populating initial data for ${colName}`);
-                    for (const item of initialVesselData[colName]) {
-                        await firebase.addDoc(colRef, item).catch(err => console.error(`Error populating ${colName}:`, err));
-                    }
-                    return; // onSnapshot will fire again after population
-                }
-
-                appData[colName] = data;
-
-                // Update UI based on current view
-                updateTabCounters();
-                updateSummaryCards();
-
-                if (currentView === 'preview') {
-                    // Re-render only the currently active tab in Preview
-                    displayContent(document.querySelector('.tab-button.active')?.dataset.tab || 'docked');
-                } else if (currentView === 'database' && colName === currentCollection) {
-                    // Re-render the Database Editor if this collection is active
-                    renderDatabasePage();
-                }
-
-            }, (error) => {
-                console.error(`Error listening to ${colName}:`, error);
-            });
+        const saveDataToLocalStorage = () => {
+            try {
+                // Ensure docked items have the correct age calculated before saving
+                appData.docked = (appData.docked || []).map(item => ({
+                    ...item,
+                    age: getAge(item.dockedOn)
+                }));
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData));
+                console.log("Data saved to local storage.");
+            } catch (e) {
+                console.error("Error saving data to local storage:", e);
+            }
+            // Trigger UI update
+            updateUI();
         };
 
-        const updateRecord = async (inputElement) => {
-            const docId = inputElement.dataset.docId;
+        const updateRecord = (inputElement) => {
+            const docId = parseInt(inputElement.dataset.docId);
             const key = inputElement.dataset.key;
             let value = inputElement.value;
 
-            // Type coercion for numbers
+            // Type coercion
             if (inputElement.type === 'number') {
                 value = parseFloat(value);
             }
 
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const docRef = firebase.doc(db, `artifacts/${appId}/public/data/${currentCollection}`, docId);
-
-            try {
-                await firebase.updateDoc(docRef, { [key]: value });
-                console.log("Record updated successfully:", docId, key, value);
-            } catch (e) {
-                console.error("Error updating document:", e);
+            const collection = appData[currentCollection];
+            if (collection) {
+                const record = collection.find(item => item.id === docId);
+                if (record) {
+                    record[key] = value;
+                    console.log("Record updated:", docId, key, value);
+                    saveDataToLocalStorage();
+                }
             }
         };
         
-        const deleteRecord = async (docId) => {
+        const deleteRecord = (docId) => {
             if (!docId) return;
 
-            // Simple custom alert/confirmation (since alert() is forbidden)
             if (!confirm(`Are you sure you want to delete this record?`)) {
                 return;
             }
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const docRef = firebase.doc(db, `artifacts/${appId}/public/data/${currentCollection}`, docId);
-
-            try {
-                await firebase.deleteDoc(docRef);
-                console.log("Record deleted successfully:", docId);
-            } catch (e) {
-                console.error("Error deleting document:", e);
-            }
+            
+            appData[currentCollection] = (appData[currentCollection] || []).filter(item => item.id !== docId);
+            console.log("Record deleted:", docId);
+            saveDataToLocalStorage();
         };
 
-        const addRecord = async () => {
-            const newRecord = {};
+        const addRecord = () => {
             const keys = Object.keys(appData[currentCollection][0] || {});
-
-            keys.filter(k => k !== 'id' && k !== 'initial' && k !== 'age').forEach(key => {
+            const newId = generateUniqueId();
+            
+            const newRecord = { id: newId };
+            keys.filter(k => k !== 'id' && k !== 'age').forEach(key => {
                 newRecord[key] = key.toLowerCase().includes('name') || key.toLowerCase().includes('vessel') ? 'New Vessel' :
                                  key.toLowerCase().includes('date') || key.toLowerCase().includes('on') ? new Date().toISOString().slice(0, 10) :
                                  key.toLowerCase().includes('value') || typeof appData[currentCollection][0][key] === 'number' ? 0 : 'N/A';
             });
             
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const colRef = firebase.collection(db, `artifacts/${appId}/public/data/${currentCollection}`);
+            if (!appData[currentCollection]) {
+                appData[currentCollection] = [];
+            }
+            appData[currentCollection].push(newRecord);
 
-            try {
-                await firebase.addDoc(colRef, newRecord);
-                console.log("New record added.");
-            } catch (e) {
-                console.error("Error adding document:", e);
+            console.log("New record added.");
+            saveDataToLocalStorage();
+            
+            // Re-render editor after adding
+            if (currentView === 'database') {
+                renderDatabasePage();
             }
         };
 
-        // Custom confirm function to comply with the rule (replace standard confirm)
+        // Custom confirm function (since alert() is forbidden)
         const confirm = (message) => {
             return window.confirm(message);
         }
+
+        // --- INITIALIZATION AND UI UPDATE ---
+
+        const initializeLocalData = () => {
+            const storedData = loadDataFromLocalStorage();
+            if (storedData) {
+                appData = storedData;
+                console.log("Loaded data from local storage.");
+            } else {
+                // Seed data on first run
+                appData = initialVesselData;
+                saveDataToLocalStorage();
+                console.log("Seeded initial data and saved to local storage.");
+            }
+            // Initial UI rendering
+            updateUI();
+        };
+
+        const updateUI = () => {
+            updateTabCounters();
+            updateSummaryCards();
+
+            if (currentView === 'preview') {
+                // Find currently active tab or default to 'docked'
+                const activeTab = document.querySelector('.tab-button.active')?.dataset.tab || 'docked';
+                displayContent(activeTab);
+            } else if (currentView === 'database') {
+                renderDatabasePage();
+            }
+        }
+
 
         // --- PREVIEW VIEW (DASHBOARD) LOGIC ---
 
@@ -476,6 +455,10 @@
             }).join('');
             
             document.querySelectorAll('.tab-button').forEach(button => {
+                // Ensure initial active tab is set correctly on first load
+                if (!document.querySelector('.tab-button.active')) {
+                    setActiveTab('docked');
+                }
                 button.addEventListener('click', (e) => setActiveTab(e.currentTarget.dataset.tab));
             });
         };
@@ -516,8 +499,8 @@
             const isAgeTable = tabName === 'docked';
             const isRevenueTable = tabName === 'revenue';
 
-            // Use the first object's keys to define columns
-            const headers = Object.keys(data[0]).filter(key => key !== 'id' && key !== 'initial').map(key => ({ key, display: getDisplayKey(key) }));
+            // Use the first object's keys to define columns (filter out internal IDs)
+            const headers = Object.keys(data[0]).filter(key => key !== 'id').map(key => ({ key, display: getDisplayKey(key) }));
 
             let tableHTML = `
                 <div class="table-container">
@@ -579,14 +562,15 @@
                 direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
             }
 
-            // Create a copy for sorting to avoid modifying the Firestore cache directly before rendering
+            // Create a copy for sorting
             const sortedData = [...data].sort((a, b) => {
                 let valA = a[key];
                 let valB = b[key];
 
                 if (key.toLowerCase().includes('date') || key.toLowerCase().includes('on')) {
-                    valA = new Date(valA);
-                    valB = new Date(valB);
+                    // Treat dates as Date objects for proper sorting
+                    valA = new Date(valA || 0); 
+                    valB = new Date(valB || 0);
                 } else if (typeof valA === 'string') {
                     valA = valA.toLowerCase();
                     valB = valB.toLowerCase();
@@ -677,8 +661,8 @@
                 return;
             }
 
-            // Get all unique keys from the data (excluding 'id' and 'initial')
-            const allKeys = [...new Set(data.flatMap(Object.keys))].filter(key => key !== 'id' && key !== 'initial');
+            // Get all unique keys from the data (excluding 'id')
+            const allKeys = Object.keys(data[0]).filter(key => key !== 'id');
 
             const tableHTML = `
                 <div class="table-container shadow-lg rounded-xl overflow-hidden">
@@ -700,7 +684,7 @@
                                         </td>
                                     `).join('')}
                                     <td class="p-2 text-center">
-                                        <button onclick="deleteRecord('${item.id}')" class="text-red-500 hover:text-red-700 transition duration-150">
+                                        <button onclick="deleteRecord(${item.id})" class="text-red-500 hover:text-red-700 transition duration-150">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
                                             </svg>
@@ -722,7 +706,7 @@
                     + Add New Record to ${getDisplayKey(currentCollection)}
                 </button>
             `;
-            // Append button below the table if not already present
+            // Append button below the table
             let btnContainer = document.getElementById('add-record-container');
             if (!btnContainer) {
                 btnContainer = document.createElement('div');
@@ -779,13 +763,7 @@
 
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (typeof firebase !== 'undefined') {
-                initializeFirebase();
-            } else {
-                // Display error if Firebase modules did not load
-                loader.classList.add('hidden');
-                document.getElementById('app-container').innerHTML = '<p class="text-red-600 p-4">Error: Firebase SDK failed to load. Please ensure network access is enabled.</p>';
-            }
+            initializeLocalData();
         });
     </script>
 
