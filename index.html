@@ -1,493 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Couple Budget App</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .scroll-table { overflow-x: auto; }
-</style>
-</head>
-<body class="bg-gray-100 text-gray-800 pb-16">
-<div class="max-w-xs w-full mx-auto p-4">
-  <h1 class="text-xl text-center mb-4">💰 Couple Budget Manager (MVR)</h1>
-
-  <div id="dashboard" class="tab-content active">
-    <div class="flex justify-between items-center mb-3 text-sm">
-      <button id="prev-month" class="px-2 py-1 bg-gray-300 rounded">« Prev</button>
-      <span id="current-month" class="text-base"></span>
-      <button id="next-month" class="px-2 py-1 bg-gray-300 rounded">Next »</button>
-    </div>
-    <button id="today-month" class="w-full mb-3 px-2 py-2 bg-blue-500 text-white rounded text-sm">📅 Current Month</button>
-
-    <div class="space-y-3">
-      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
-        <div>Total Income</div>
-        <div id="total-income" class="text-base">0 MVR</div>
-      </div>
-      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
-        <div>Total Expenses</div>
-        <div id="total-expenses" class="text-base">0 MVR</div>
-      </div>
-      <div class="bg-white p-3 shadow rounded flex justify-between items-center text-sm">
-        <div>Remaining Balance</div>
-        <div id="remaining" class="text-base text-green-600">0 MVR</div>
-      </div>
-    </div>
-    <button id="add-income-btn" class="mt-3 w-full bg-blue-500 text-white px-3 py-2 rounded text-sm">➕ Add Salary / Income</button>
-  </div>
-
-  <div id="expenses" class="tab-content scroll-table">
-    <h2 class="text-base mb-2">Add Expense</h2>
-    <form id="expense-form" class="space-y-2 mb-3">
-      <input type="text" id="expense-desc" placeholder="Description" class="w-full p-2 border rounded text-sm" required>
-      <select id="expense-cat" class="w-full p-2 border rounded text-sm" required></select>
-      <input type="number" id="expense-amt" placeholder="Amount (MVR)" class="w-full p-2 border rounded text-sm" required>
-      <input type="file" id="expense-img" accept="image/*" class="w-full text-sm">
-      <button type="submit" class="w-full bg-green-500 text-white px-2 py-2 rounded text-sm">Add Expense</button>
-    </form>
-    <div class="overflow-x-auto">
-      <table class="w-full table-auto bg-white shadow rounded mb-3 text-xs">
-        <thead><tr class="bg-gray-200"><th class='p-2'>Date</th><th class='p-2'>Desc</th><th class='p-2'>Cat</th><th class='p-2'>Amount</th><th class='p-2'>Bill</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="expense-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="fixed" class="tab-content scroll-table">
-    <h2 class="text-base mb-2">Fixed Expenses</h2>
-    <form id="fixed-form" class="space-y-2 mb-3">
-      <select id="fixed-cat" class="w-full p-2 border rounded text-sm" required></select>
-      <input type="number" id="fixed-amt" placeholder="Amount (MVR)" class="w-full p-2 border rounded text-sm" required>
-      <button type="submit" class="w-full bg-blue-500 text-white px-2 py-2 rounded text-sm">Add / Update</button>
-    </form>
-    <div class="overflow-x-auto">
-      <table class="w-full table-auto bg-white shadow rounded text-xs">
-        <thead><tr class="bg-gray-200"><th class='p-2'>Category</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="fixed-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="categories" class="tab-content scroll-table">
-    <h2 class="text-base mb-2">Categories</h2>
-    <form id="category-form" class="space-y-2 mb-3">
-      <input type="text" id="cat-name" placeholder="Category Name" class="w-full p-2 border rounded text-sm" required>
-      <select id="cat-type" class="w-full p-2 border rounded text-sm" required>
-        <option value="expense">Expense</option>
-        <option value="fixed">Fixed Expense</option>
-      </select>
-      <button type="submit" class="w-full bg-purple-500 text-white px-2 py-2 rounded text-sm">Add Category</button>
-    </form>
-    <div class="overflow-x-auto">
-      <table class="w-full table-auto bg-white shadow rounded text-xs">
-        <thead><tr class="bg-gray-200"><th class='p-2'>Name</th><th class='p-2'>Type</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="category-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="settings" class="tab-content scroll-table">
-    <h2 class="text-base mb-2">Settings</h2>
-    <div class="flex justify-between items-center mb-2 text-sm">
-      <button id="settings-prev-month" class="px-2 py-1 bg-gray-300 rounded">« Prev</button>
-      <span id="settings-current-month" class="text-base"></span>
-      <button id="settings-next-month" class="px-2 py-1 bg-gray-300 rounded">Next »</button>
-    </div>
-    <button id="settings-today-month" class="w-full mb-2 bg-blue-500 text-white px-2 py-2 rounded text-sm">📅 Current Month</button>
-    <button id="reset-month" class="w-full mb-3 bg-red-500 text-white px-2 py-2 rounded text-sm">🗑 Reset All Monthly Data</button>
-
-    <div class="overflow-x-auto mb-2">
-      <h3 class="text-sm text-gray-700 mb-1">Monthly Income</h3>
-      <table class="w-full table-auto bg-white shadow rounded mb-2 text-xs">
-        <thead><tr class='bg-gray-200'><th class='p-2'>Date</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="settings-income-table"></tbody>
-      </table>
-    </div>
-    <div class="overflow-x-auto mb-2">
-      <h3 class="text-sm text-gray-700 mb-1">Monthly Expenses</h3>
-      <table class="w-full table-auto bg-white shadow rounded mb-2 text-xs">
-        <thead><tr class='bg-gray-200'><th class='p-2'>Expense</th><th class='p-2'>Category</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="settings-expense-table"></tbody>
-      </table>
-    </div>
-    <div class="overflow-x-auto">
-      <h3 class="text-sm text-gray-700 mb-1">Fixed Expenses</h3>
-      <table class="w-full table-auto bg-white shadow rounded text-xs">
-        <thead><tr class='bg-gray-200'><th class='p-2'>Fixed Expense</th><th class='p-2'>Amount</th><th class='p-2'>Actions</th></tr></thead>
-        <tbody id="settings-fixed-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="fixed bottom-0 left-0 right-0 z-10 bg-white shadow-lg border-t border-gray-200">
-    <div class="flex flex-wrap justify-around px-2 py-1 text-xs">
-      <button class="tab-btn flex-1 text-center py-2 px-1 bg-blue-500 text-white rounded-lg mx-1" data-tab="dashboard">Dashboard</button>
-      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="expenses">Expenses</button>
-      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="fixed">Fixed</button>
-      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="categories">Cats</button>
-      <button class="tab-btn flex-1 text-center py-2 px-1 bg-gray-300 rounded-lg mx-1" data-tab="settings">Settings</button>
-    </div>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const S = {
-    incomes: JSON.parse(localStorage.getItem('incomes')) || [],
-    expenses: JSON.parse(localStorage.getItem('expenses')) || [],
-    fixedExpenses: JSON.parse(localStorage.getItem('fixedExpenses')) || [],
-    categories: JSON.parse(localStorage.getItem('categories')) || [],
-    selectedDate: new Date(),
-    settingsDate: new Date(),
-  };
-
-  S.incomes = S.incomes.filter(i => i.amount !== 85000);
-  
-  const D = {
-    totalIncome: document.getElementById('total-income'),
-    totalExpenses: document.getElementById('total-expenses'),
-    remaining: document.getElementById('remaining'),
-    currentMonth: document.getElementById('current-month'),
-    settingsCurrentMonth: document.getElementById('settings-current-month'),
-    tabBtns: document.querySelectorAll('.tab-btn'),
-    tabContents: document.querySelectorAll('.tab-content'),
-    expenseForm: document.getElementById('expense-form'),
-    expenseCat: document.getElementById('expense-cat'),
-    fixedForm: document.getElementById('fixed-form'),
-    fixedCat: document.getElementById('fixed-cat'),
-    categoryForm: document.getElementById('category-form'),
-    expenseTable: document.getElementById('expense-table'),
-    fixedTable: document.getElementById('fixed-table'),
-    categoryTable: document.getElementById('category-table'),
-    settingsIncomeTable: document.getElementById('settings-income-table'),
-    settingsExpenseTable: document.getElementById('settings-expense-table'),
-    settingsFixedTable: document.getElementById('settings-fixed-table'),
-    addIncomeBtn: document.getElementById('add-income-btn'),
-    resetMonthBtn: document.getElementById('reset-month'),
-  };
-
-  const saveData = () => {
-    localStorage.setItem('incomes', JSON.stringify(S.incomes));
-    localStorage.setItem('expenses', JSON.stringify(S.expenses));
-    localStorage.setItem('fixedExpenses', JSON.stringify(S.fixedExpenses));
-    localStorage.setItem('categories', JSON.stringify(S.categories));
-  };
-
-  const formatMonth = (date) => date.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const formatAmount = (amount) => `${amount.toLocaleString()} MVR`;
-  const formatDateTime = (date) => new Date(date).toLocaleDateString();
-
-  const updateDashboard = () => {
-    D.currentMonth.textContent = formatMonth(S.selectedDate);
-    const month = S.selectedDate.getMonth();
-    const year = S.selectedDate.getFullYear();
-
-    const currentIncomes = S.incomes.filter(i => {
-      const d = new Date(i.date || new Date());
-      return d.getMonth() === month && d.getFullYear() === year;
-    });
-    const totalIncome = currentIncomes.reduce((sum, i) => sum + i.amount, 0);
-
-    const currentExpenses = S.expenses.filter(e => {
-      const d = new Date(e.date);
-      return d.getMonth() === month && d.getFullYear() === year;
-    });
-    const totalMonthlyExpenses = currentExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalFixedExpenses = S.fixedExpenses.reduce((sum, f) => sum + f.amount, 0);
-    const totalExpenses = totalMonthlyExpenses + totalFixedExpenses;
-
-    D.totalIncome.textContent = formatAmount(totalIncome);
-    D.totalExpenses.textContent = formatAmount(totalExpenses);
-    const remaining = totalIncome - totalExpenses;
-    D.remaining.textContent = formatAmount(remaining);
-    D.remaining.classList.remove('text-red-600', 'text-green-600');
-    D.remaining.classList.add(remaining < 0 ? 'text-red-600' : 'text-green-600');
-  };
-
-  const updateSettingsMonthLabel = () => {
-    D.settingsCurrentMonth.textContent = formatMonth(S.settingsDate);
-  };
-
-  const renderCategories = () => {
-    D.expenseCat.innerHTML = '';
-    D.fixedCat.innerHTML = '';
-    D.categoryTable.innerHTML = '';
-
-    S.categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.name;
-      option.textContent = cat.name;
-      if (cat.type === 'expense') D.expenseCat.appendChild(option);
-      if (cat.type === 'fixed') D.fixedCat.appendChild(option);
-
-      const tr = document.createElement('tr');
-      tr.className = 'border-t text-center';
-      tr.innerHTML = `
-        <td class='p-2'>${cat.name}</td>
-        <td class='p-2'>${cat.type}</td>
-        <td class='p-2'>
-          <button class='delete-cat-btn bg-red-500 text-white px-2 py-1 rounded' data-name='${cat.name}'>Del</button>
-        </td>
-      `;
-      D.categoryTable.appendChild(tr);
-    });
-  };
-
-  const renderExpenses = () => {
-    D.expenseTable.innerHTML = '';
-    const month = S.selectedDate.getMonth();
-    const year = S.selectedDate.getFullYear();
-    S.expenses.filter(e => new Date(e.date).getMonth() === month && new Date(e.date).getFullYear() === year)
-      .forEach((e, index) => {
-        const tr = document.createElement('tr');
-        tr.className = 'border-t text-center';
-        tr.innerHTML = `
-          <td class='p-2 text-sm'>${formatDateTime(e.date)}</td>
-          <td class='p-2'>${e.desc}</td>
-          <td class='p-2'>${e.cat}</td>
-          <td class='p-2'>${formatAmount(e.amount)}</td>
-          <td class='p-2'>
-            ${e.bill ? `<a href='${e.bill}' target='_blank' class='text-blue-500'>View</a>` : 'N/A'}
-          </td>
-          <td class='p-2'>
-            <button class='delete-exp-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button>
-          </td>
-        `;
-        D.expenseTable.appendChild(tr);
-      });
-  };
-
-  const renderFixedExpenses = () => {
-    D.fixedTable.innerHTML = '';
-    S.fixedExpenses.forEach((f, index) => {
-      const tr = document.createElement('tr');
-      tr.className = 'border-t text-center';
-      tr.innerHTML = `
-        <td class='p-2'>${f.cat}</td>
-        <td class='p-2'>${formatAmount(f.amount)}</td>
-        <td class='p-2'>
-          <button class='delete-fixed-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button>
-        </td>
-      `;
-      D.fixedTable.appendChild(tr);
-    });
-  };
-
-  const renderSettingsTables = () => {
-    const month = S.settingsDate.getMonth();
-    const year = S.settingsDate.getFullYear();
-
-    const monthlyIncomes = S.incomes.filter(i => new Date(i.date).getMonth() === month && new Date(i.date).getFullYear() === year);
-    D.settingsIncomeTable.innerHTML = monthlyIncomes.map((i, index) => `
-      <tr class='border-t text-center'>
-        <td class='p-2'>${formatDateTime(i.date)}</td>
-        <td class='p-2'>${formatAmount(i.amount)}</td>
-        <td class='p-2'><button class='delete-inc-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
-      </tr>
-    `).join('');
-
-    const monthlyExpenses = S.expenses.filter(e => new Date(e.date).getMonth() === month && new Date(e.date).getFullYear() === year);
-    D.settingsExpenseTable.innerHTML = monthlyExpenses.map((e, index) => `
-      <tr class='border-t text-center'>
-        <td class='p-2'>${formatDateTime(e.date)}</td>
-        <td class='p-2'>${e.cat}</td>
-        <td class='p-2'>${formatAmount(e.amount)}</td>
-        <td class='p-2'><button class='delete-settings-exp-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
-      </tr>
-    `).join('');
-
-    D.settingsFixedTable.innerHTML = S.fixedExpenses.map((f, index) => `
-      <tr class='border-t text-center'>
-        <td class='p-2'>${f.cat}</td>
-        <td class='p-2'>${formatAmount(f.amount)}</td>
-        <td class='p-2'><button class='delete-fixed-btn bg-red-500 text-white px-2 py-1 rounded' data-index='${index}'>Del</button></td>
-      </tr>
-    `).join('');
-  };
-
-  const updateAll = () => {
-    updateDashboard();
-    updateSettingsMonthLabel();
-    renderCategories();
-    renderExpenses();
-    renderFixedExpenses();
-    renderSettingsTables();
-  };
-
-  // Event Listeners
-  D.tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      D.tabBtns.forEach(b => b.classList.remove('bg-blue-500', 'text-white'));
-      btn.classList.add('bg-blue-500', 'text-white');
-      D.tabContents.forEach(c => c.classList.remove('active'));
-      document.getElementById(btn.dataset.tab).classList.add('active');
-      updateAll();
-    });
-  });
-
-  document.getElementById('prev-month').onclick = () => { S.selectedDate.setMonth(S.selectedDate.getMonth() - 1); updateAll(); };
-  document.getElementById('next-month').onclick = () => { S.selectedDate.setMonth(S.selectedDate.getMonth() + 1); updateAll(); };
-  document.getElementById('today-month').onclick = () => { S.selectedDate = new Date(); updateAll(); };
-
-  document.getElementById('settings-prev-month').onclick = () => { S.settingsDate.setMonth(S.settingsDate.getMonth() - 1); updateAll(); };
-  document.getElementById('settings-next-month').onclick = () => { S.settingsDate.setMonth(S.settingsDate.getMonth() + 1); updateAll(); };
-  document.getElementById('settings-today-month').onclick = () => { S.settingsDate = new Date(); updateAll(); };
-
-  D.addIncomeBtn.addEventListener('click', () => {
-    const amount = parseFloat(prompt('Enter salary/income amount (MVR):'));
-    if (amount > 0) {
-      const selectedMonth = prompt('Enter month for this income (YYYY-MM):');
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split('-').map(Number);
-        if (!isNaN(year) && !isNaN(month) && month > 0 && month <= 12) {
-          S.incomes.push({ amount, date: new Date(year, month - 1, 1) });
-          saveData();
-          updateAll();
-          alert('Income added successfully! 🎉');
-        } else {
-          alert('Invalid month format. Please use YYYY-MM.');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Project Status Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for the "Inter" font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
         }
-      } else {
-        S.incomes.push({ amount, date: new Date() });
-        saveData();
-        updateAll();
-        alert('Income added successfully! 🎉 (Defaulting to current month)');
-      }
-    } else {
-      alert('Please enter a valid amount.');
-    }
-  });
+        /* Custom scrollbar for aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
 
-  D.expenseForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const desc = document.getElementById('expense-desc').value;
-    const cat = D.expenseCat.value;
-    const amount = parseFloat(document.getElementById('expense-amt').value);
-    const imgFile = document.getElementById('expense-img').files[0];
+    <div id="app" class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 p-6 bg-white shadow-lg rounded-xl">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-900">DAILY PROJECT STATUS UPDATE</h1>
+            <p class="text-lg text-gray-600 mt-1">Week 43 Report - Prepared: <span id="report-date"></span></p>
+        </header>
 
-    if (amount <= 0 || !desc || !cat) {
-      alert('Please fill out all fields with valid data.');
-      return;
-    }
+        <!-- KPI Dashboard Section -->
+        <section class="mb-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Vessel Status & Key Performance Indicators (KPIs)</h2>
+            <div id="kpi-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- KPI cards will be rendered here -->
+            </div>
+        </section>
 
-    if (imgFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        S.expenses.push({ desc, cat, amount, date: new Date(), bill: reader.result });
-        saveData();
-        updateAll();
-        D.expenseForm.reset();
-        alert('Expense added successfully! ✅');
-      };
-      reader.readAsDataURL(imgFile);
-    } else {
-      S.expenses.push({ desc, cat, amount, date: new Date(), bill: null });
-      saveData();
-      updateAll();
-      D.expenseForm.reset();
-      alert('Expense added successfully! ✅');
-    }
-  });
+        <!-- Agenda and Project Updates (Side-by-Side on Desktop) -->
+        <div class="lg:grid lg:grid-cols-3 lg:gap-8 mb-10">
+            <!-- Agenda -->
+            <section class="lg:col-span-1 mb-8 lg:mb-0">
+                <div class="bg-white p-6 shadow-lg rounded-xl h-full">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Meeting Agenda</h2>
+                    <ol id="agenda-list" class="space-y-3">
+                        <!-- Agenda items will be rendered here -->
+                    </ol>
+                </div>
+            </section>
 
-  D.fixedForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const cat = D.fixedCat.value;
-    const amount = parseFloat(document.getElementById('fixed-amt').value);
+            <!-- Project Updates -->
+            <section class="lg:col-span-2">
+                <div class="bg-white p-6 shadow-lg rounded-xl h-full">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Key Project Updates</h2>
+                    <ul id="project-updates-list" class="space-y-4">
+                        <!-- Project updates will be rendered here -->
+                    </ul>
+                </div>
+            </section>
+        </div>
 
-    if (amount <= 0 || !cat) {
-      alert('Please fill out all fields with valid data.');
-      return;
-    }
 
-    const existingFixed = S.fixedExpenses.find(f => f.cat === cat);
-    if (existingFixed) {
-      existingFixed.amount = amount;
-      alert(`Fixed expense for '${cat}' updated successfully!`);
-    } else {
-      S.fixedExpenses.push({ cat, amount });
-      alert('Fixed expense added successfully! ✅');
-    }
-    saveData();
-    updateAll();
-    D.fixedForm.reset();
-  });
+        <!-- Detailed Vessel Status Table -->
+        <section class="mb-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Vessels On Dock - Detailed Status (15 Total)</h2>
+            <div class="bg-white p-4 shadow-lg rounded-xl overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vessel Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Docked On</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Age (Days)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vessel-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Vessel rows will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-  D.categoryForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = document.getElementById('cat-name').value;
-    const type = document.getElementById('cat-type').value;
+        <!-- Pending PR/MTR Status Table -->
+        <section class="mb-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Critical Pending PR/MTR Status</h2>
+            <div class="bg-white p-4 shadow-lg rounded-xl overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vessel</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PR/MTR</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks / Action Required</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pr-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- PR/MTR rows will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-    if (!name) {
-      alert('Category name cannot be empty.');
-      return;
-    }
-    const isExisting = S.categories.some(c => c.name.toLowerCase() === name.toLowerCase());
-    if (isExisting) {
-      alert('This category already exists.');
-      return;
-    }
+    </div>
 
-    S.categories.push({ name, type });
-    saveData();
-    updateAll();
-    D.categoryForm.reset();
-    alert('Category added successfully! ✅');
-  });
+    <script>
+        // --- 1. DATA SOURCE: UPDATE THIS OBJECT DAILY ---
+        const reportData = {
+            date: "24 October 2025",
+            agenda: [
+                "Follow Up: Review and follow-up on all action items from the previous meeting.",
+                "Customer Service Review: Detailed updates on external (docking, quotations, sales leads) and internal (new service requests, pending task allocation) customers.",
+                "Planning Updates: Progress review for both external and internal vessel dry-docking (D/D) preparations and scheduling.",
+                "Project Updates: Status of vessels currently on dry-dock, high-priority jobs, resource allocation, and challenges/solutions.",
+                "Summary & Actions: Defining clear action items, assigning designations, and confirming next steps.",
+                "Closing: General discussion and addressing any other open issues."
+            ],
+            kpis: {
+                totalVessels: 15,
+                longestDockingDays: 1527,
+                internalVessels: 11,
+                externalVessels: 4
+            },
+            vesselStatus: [
+                { id: 1, name: "MAHAA KORAKALI", customer: "MTCC ERD", docked: "16-Aug-21", type: "INTERNAL", age: 1527 },
+                { id: 2, name: "NIYAAMA 2", customer: "MTCC TSD", docked: "10-Apr-23", type: "INTER-DIVISION", age: 925 },
+                { id: 3, name: "YANMAR BOAT", customer: "MTCC TRD", docked: "3-Aug-23", type: "INTER-DIVISION", age: 810 },
+                { id: 4, name: "SL-01", customer: "MTCC TSD", docked: "21-Jul-25", type: "INTER-DIVISION", age: 92 },
+                { id: 5, name: "NIYAAMA 5", customer: "MTCC TSD", docked: "16-Aug-25", type: "INTER-DIVISION", age: 66 },
+                { id: 6, name: "RTL 107", customer: "MTCC TSD", docked: "25-Aug-25", type: "INTER-DIVISION", age: 57 },
+                { id: 7, name: "RTL 106", customer: "MTCC TSD", docked: "25-Sep-25", type: "INTER-DIVISION", age: 26 },
+                { id: 8, name: "SL-07", customer: "MTCC TSD", docked: "07-OCT-25", type: "INTER-DIVISION", age: 14 },
+                { id: 9, name: "AILA", customer: "MTCC TSD", docked: "19-OCT-25", type: "INTER-DIVISION", age: 3 },
+                { id: 10, name: "JUPITER", customer: "MTCC TSD", docked: "21-OCT-25", type: "INTER-DIVISION", age: 1 },
+                { id: 11, name: "EXPRESS-2", customer: "MTCC TSD", docked: "22-OCT-25", type: "INTER-DIVISION", age: 0 },
+                { id: 12, name: "LIBRA", customer: "STATE TRADING ORGANIZATION PLC", docked: "23-Sep-25", type: "EXTERNAL", age: 28 },
+                { id: 13, name: "MALAAHAA", customer: "SEAMAT PVT LTD", docked: "19-OCT-25", type: "EXTERNAL", age: 2 },
+                { id: 14, name: "VIDHUVARU", customer: "WAVE TIDE MALDIVES PVT LTD", docked: "19-Oct-25", type: "EXTERNAL", age: 2 },
+                { id: 15, name: "HEALTH-1", customer: "URH", docked: "21-Oct-25", type: "EXTERNAL", age: 2 },
+            ],
+            projectUpdates: [
+                {
+                    title: "WO System (Target 31 Dec 2025)",
+                    details: "Work has resumed as of 4th October 2025. Galley and washroom construction are currently ongoing."
+                },
+                {
+                    title: "Management Approval Status",
+                    details: "Purchase Order (PO) has been approved by finance; \u2022\u00A0\u00A0\u00A0\textbf{status on management approval is still pending}."
+                },
+            ],
+            pendingPR: [
+                { vessel: "22M FERRY", unit: "CPS", pr: "PR078375", remarks: "Electrical Items. No further update provided." },
+                { vessel: "SL-05", unit: "OSU", pr: "MTR-029070", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Partial Delivery:} 21 out of 55 items received; 5 items partially received. \u2022\u00A0\u00A0\u00A0Original order placed via Airfreight on 14-09-2025." },
+                { vessel: "RTL 107", unit: "MRW", pr: "MTR-029148", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Lead Time Issue:} 11 items have a lead time exceeding three months. \u2022\u00A0\u00A0\u00A0Remaining items are awaiting shipping documents. Airfreight requested." },
+                { vessel: "RTL 107", unit: "MRW", pr: "PR077318", remarks: "\u2022\u00A0\u00A0\u00A0\textbf{Payment Pending:} Batteries and battery cables (0/13 items delivered) are pending payment. \u2022\u00A0\u00A0\u00A0All other items have raised POs, except for the 1\" spring hose." },
+                { vessel: "RTL 106", unit: "MRW", pr: "MTR-029314", remarks: "Awaiting supplier confirmation on lead time." },
+                { vessel: "RTL 106", unit: "MRW", pr: "MTR-029731", remarks: "Order for ROD ASSY, CONNECTING is pending." },
+            ]
+        };
+        // --- END DATA SOURCE ---
 
-  D.resetMonthBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to reset all incomes and expenses for the current month? Fixed expenses will remain.')) {
-      const month = S.settingsDate.getMonth();
-      const year = S.settingsDate.getFullYear();
-      S.incomes = S.incomes.filter(i => new Date(i.date).getMonth() !== month || new Date(i.date).getFullYear() !== year);
-      S.expenses = S.expenses.filter(e => new Date(e.date).getMonth() !== month || new Date(e.date).getFullYear() !== year);
-      saveData();
-      updateAll();
-      alert('Month data has been reset! 🗑️');
-    }
-  });
+        // --- 2. RENDERING FUNCTIONS ---
 
-  document.body.addEventListener('click', (e) => {
-    if (e.target.classList.contains('delete-cat-btn')) {
-      const name = e.target.dataset.name;
-      const isUsed = S.expenses.some(exp => exp.cat === name) || S.fixedExpenses.some(f => f.cat === name);
-      if (isUsed) {
-        alert('Cannot delete category. It is currently in use.');
-      } else if (confirm(`Are you sure you want to delete the '${name}' category?`)) {
-        S.categories = S.categories.filter(c => c.name !== name);
-        saveData();
-        updateAll();
-      }
-    } else if (e.target.classList.contains('delete-exp-btn') || e.target.classList.contains('delete-settings-exp-btn')) {
-      if (confirm('Are you sure you want to delete this expense?')) {
-        const index = e.target.dataset.index;
-        S.expenses.splice(index, 1);
-        saveData();
-        updateAll();
-      }
-    } else if (e.target.classList.contains('delete-fixed-btn')) {
-      if (confirm('Are you sure you want to delete this fixed expense?')) {
-        const index = e.target.dataset.index;
-        S.fixedExpenses.splice(index, 1);
-        saveData();
-        updateAll();
-      }
-    } else if (e.target.classList.contains('delete-inc-btn')) {
-      if (confirm('Are you sure you want to delete this income?')) {
-        const index = e.target.dataset.index;
-        S.incomes.splice(index, 1);
-        saveData();
-        updateAll();
-      }
-    }
-  });
+        function renderHeader() {
+            document.getElementById('report-date').textContent = reportData.date;
+        }
 
-  updateAll();
-});
-</script>
+        function renderKPIs() {
+            const container = document.getElementById('kpi-dashboard');
+            const kpis = [
+                { label: "Total Vessels on Dock", value: reportData.kpis.totalVessels, color: "bg-blue-500" },
+                { label: "Longest Docking Age (Days)", value: reportData.kpis.longestDockingDays, color: "bg-red-500" },
+                { label: "Internal / Inter-Division Mix", value: reportData.kpis.internalVessels + " Vessels", color: "bg-green-500" },
+                { label: "External Customer Mix", value: reportData.kpis.externalVessels + " Vessels", color: "bg-yellow-500" }
+            ];
+
+            kpis.forEach(kpi => {
+                const card = `
+                    <div class="p-6 text-white ${kpi.color} rounded-xl shadow-md transform transition duration-300 hover:scale-[1.02]">
+                        <p class="text-sm opacity-80">${kpi.label}</p>
+                        <p class="text-3xl font-bold mt-1">${kpi.value}</p>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        function renderAgenda() {
+            const list = document.getElementById('agenda-list');
+            list.innerHTML = reportData.agenda.map((item, index) => `
+                <li class="flex items-start">
+                    <span class="font-bold text-blue-700 mr-2">${index + 1}.</span>
+                    <p class="text-gray-700">${item}</p>
+                </li>
+            `).join('');
+        }
+
+        function renderProjectUpdates() {
+            const list = document.getElementById('project-updates-list');
+            list.innerHTML = reportData.projectUpdates.map(update => `
+                <li class="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50/50 rounded-lg">
+                    <p class="font-semibold text-gray-800">${update.title}</p>
+                    <p class="text-sm text-gray-600">${update.details}</p>
+                </li>
+            `).join('');
+        }
+
+        function renderVesselTable() {
+            const tbody = document.getElementById('vessel-table-body');
+            tbody.innerHTML = reportData.vesselStatus.map(vessel => {
+                // Determine row color based on type and age
+                let rowClasses = 'whitespace-nowrap text-sm text-gray-700';
+                let ageClass = 'text-gray-700';
+                if (vessel.type === 'EXTERNAL') {
+                    rowClasses += ' bg-yellow-50/50';
+                }
+                if (vessel.age > 800) {
+                    ageClass = 'text-red-600 font-semibold';
+                } else if (vessel.age > 50) {
+                    ageClass = 'text-orange-600';
+                }
+
+                return `
+                    <tr class="${rowClasses}">
+                        <td class="px-3 py-3 font-medium text-center">${vessel.id}</td>
+                        <td class="px-6 py-3 font-medium text-blue-800">${vessel.name}</td>
+                        <td class="px-6 py-3">${vessel.customer}</td>
+                        <td class="px-6 py-3">${vessel.docked}</td>
+                        <td class="px-6 py-3">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vessel.type === 'EXTERNAL' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                                ${vessel.type.replace('-', ' ')}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-center ${ageClass}">${vessel.age}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPRTable() {
+            const tbody = document.getElementById('pr-table-body');
+            tbody.innerHTML = reportData.pendingPR.map(item => {
+                // Highlight critical remarks
+                let remarksHtml = item.remarks;
+                if (item.remarks.includes('Payment Pending') || item.remarks.includes('Lead Time Issue')) {
+                    remarksHtml = `<span class="text-red-600 font-medium">${item.remarks}</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap font-medium text-blue-800">${item.vessel}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${item.unit}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">${item.pr}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 max-w-lg leading-relaxed">${remarksHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- 3. INITIALIZATION ---
+        window.onload = function() {
+            renderHeader();
+            renderKPIs();
+            renderAgenda();
+            renderProjectUpdates();
+            renderVesselTable();
+            renderPRTable();
+        };
+
+    </script>
+
 </body>
 </html>
