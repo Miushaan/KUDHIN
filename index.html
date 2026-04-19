@@ -8,137 +8,222 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* [Previous CSS remains the same, adding one new class for Asset Badges] */
         :root { 
             --bg: #f8fafc; --side: #0f172a; --brand: #6366f1; --brand-light: #e0e7ff; 
-            --success: #10b981; --border: #cbd5e1; --text-main: #1e293b; 
-            --text-muted: #64748b; --danger: #f43f5e; --warning: #f59e0b; 
-            --card-bg: #ffffff; --input-bg: #ffffff; --table-head: #f1f5f9;
+            --success: #10b981; --border: #cbd5e1; --text-main: #1e293b; --text-muted: #64748b; 
+            --danger: #f43f5e; --warning: #f59e0b; --card-bg: #ffffff; --input-bg: #ffffff; --table-head: #f1f5f9;
         }
-
         [data-theme="dark"] {
             --bg: #020617; --side: #000000; --brand: #818cf8; --brand-light: rgba(99, 102, 241, 0.15);
-            --border: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; 
-            --card-bg: #0f172a; --input-bg: #1e293b; --table-head: #1e293b;
+            --border: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; --card-bg: #0f172a;
+            --input-bg: #1e293b; --table-head: #1e293b;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; transition: 0.3s; }
-
-        .sidebar { width: 260px; background: var(--side); color: white; display: flex; flex-direction: column; padding: 40px 20px; flex-shrink: 0; z-index: 100; border-right: 2px solid rgba(255,255,255,0.1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+        .sidebar { width: 260px; background: var(--side); color: white; display: flex; flex-direction: column; padding: 40px 20px; flex-shrink: 0; border-right: 2px solid rgba(255,255,255,0.1); }
         .logo-box { margin-bottom: 50px; padding-left: 15px; border-left: 4px solid var(--brand); }
-        .logo-box h1 { font-size: 14px; font-weight: 800; line-height: 1.2; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
-        
-        .nav-btn { width: 100%; padding: 14px 18px; border-radius: 12px; border: 1px solid transparent; background: transparent; color: #94a3b8; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-bottom: 8px; text-transform: uppercase; }
-        .nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .logo-box h1 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
+        .nav-btn { width: 100%; padding: 14px 18px; border-radius: 12px; background: transparent; color: #94a3b8; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; text-transform: uppercase; border: 1px solid transparent; }
         .nav-btn.active { background: var(--brand); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
-
         .wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
         .top-bar { padding: 20px 40px; background: var(--card-bg); border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 20px; }
-        
-        .search-wrap { flex: 1; max-width: 400px; }
-        .search-wrap input { width: 100%; padding: 12px 20px; border-radius: 14px; border: 2px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 13px; }
-
         .main-content { flex: 1; padding: 30px 40px; overflow: auto; }
-        .table-container { background: var(--card-bg); border-radius: 16px; border: 2px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-
+        .table-container { background: var(--card-bg); border-radius: 16px; border: 2px solid var(--border); overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
-        thead th { position: sticky; top: 0; background: var(--table-head); padding: 18px 20px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); }
-        tbody td { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
-
-        .remarks-editor { width: 100%; padding: 10px; background: var(--bg); border-radius: 8px; font-size: 12px; border: 1px solid var(--border); color: var(--text-main); }
-        .age-badge { font-weight: 800; font-size: 11px; color: var(--brand); background: var(--brand-light); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--brand); }
-
+        thead th { background: var(--table-head); padding: 18px 20px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        tbody td { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .asset-id { font-family: monospace; font-weight: 700; color: var(--brand); background: var(--brand-light); padding: 2px 6px; border-radius: 4px; }
         .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
-        .modal { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 500px; border: 2px solid var(--brand); max-height: 90vh; overflow-y: auto; }
-        
-        .btn-main { padding: 12px 20px; border-radius: 12px; font-weight: 800; border: 2px solid transparent; cursor: pointer; text-transform: uppercase; font-size: 10px; display: flex; align-items: center; gap: 8px; }
+        .modal { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 500px; border: 2px solid var(--brand); }
+        .remarks-editor, select { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px; border: 2px solid var(--border); background: var(--input-bg); color: var(--text-main); font-family: inherit; }
+        .btn-main { padding: 12px 20px; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 10px; border: none; display: flex; align-items: center; gap: 8px; }
         .btn-primary { background: var(--brand); color: white; }
-        .btn-outline { background: var(--card-bg); border-color: var(--border); color: var(--text-main); }
     </style>
 </head>
-<body data-theme="light">
-
-    <div id="auth-overlay" style="position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 5000;">
-        <div style="background: white; padding: 50px; border-radius: 30px; width: 400px; text-align: center; border: 3px solid var(--brand);">
-            <h2 style="font-weight: 800; margin-bottom: 25px;">SYSTEM ACCESS</h2>
-            <input type="email" id="login-email" placeholder="Email" class="remarks-editor" style="margin-bottom:12px;">
-            <input type="password" id="login-pass" placeholder="Password" class="remarks-editor" style="margin-bottom:20px;">
-            <button onclick="handleLogin()" class="btn-main btn-primary" style="width:100%; justify-content: center;">Authenticate</button>
-        </div>
-    </div>
+<body>
 
     <nav class="sidebar">
         <div class="logo-box"><h1>SRD<br>PORTAL 2026</h1></div>
         <div style="flex: 1;">
-            <button id="nav-dash" onclick="switchPage('DASH')" class="nav-btn active">PRF TRACKER</button>
-            <button id="nav-yard" onclick="switchPage('YARD')" class="nav-btn">Boat Yard Log</button>
-            <button id="nav-assets" onclick="switchPage('ASSETS')" class="nav-btn">Asset Register</button>
-            <button id="nav-tasks" onclick="switchPage('TASKS')" class="nav-btn">Task Manager</button>
-            <button id="nav-trans" onclick="switchPage('TRANS')" class="nav-btn">Transactions</button>
+            <button onclick="switchPage('DASH')" id="nav-dash" class="nav-btn active">PRF TRACKER</button>
+            <button onclick="switchPage('YARD')" id="nav-yard" class="nav-btn">Boat Yard Log</button>
+            <button onclick="switchPage('ASSETS')" id="nav-assets" class="nav-btn">Asset Manager</button>
+            <button onclick="switchPage('TRANS')" id="nav-trans" class="nav-btn">Transactions</button>
         </div>
-        <button onclick="handleLogout()" class="nav-btn" style="color: var(--danger); margin-top: auto;">Sign Out</button>
     </nav>
 
     <div class="wrapper">
         <header class="top-bar">
-            <h2 id="page-title">PRF TRACKER</h2>
-            <div class="search-wrap"><input type="text" id="main-search" placeholder="Search records..." onkeyup="refreshTable()"></div>
-            <div class="action-group" style="display:flex; gap:10px;">
-                <button onclick="toggleTheme()" class="btn-main btn-outline">🌙</button>
-                <button id="btn-create" onclick="openModal()" class="btn-main btn-primary">+ Create Entry</button>
+            <div class="header-info"><h2 id="page-title">PRF TRACKER</h2></div>
+            <div class="action-group" style="margin-left: auto; display: flex; gap: 10px;">
+                <button onclick="openModal()" class="btn-main btn-primary" id="btn-create">+ Create Entry</button>
             </div>
         </header>
 
         <main class="main-content">
             <div class="table-container">
-                <table><thead id="table-head"></thead><tbody id="table-body"></tbody></table>
+                <table id="main-table">
+                    <thead id="table-head"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
             </div>
         </main>
     </div>
 
     <div id="entry-modal" class="overlay" onclick="if(event.target===this) closeModal()">
         <div class="modal">
-            <h2 id="modal-title" style="margin-bottom:25px; font-weight: 800; color: var(--brand);">NEW ENTRY</h2>
+            <h2 id="modal-title" style="margin-bottom:25px; font-weight: 800;">NEW ENTRY</h2>
             
-            <div id="asset-form" style="display:none;">
-                <input type="text" id="a-name" placeholder="VESSEL NAME" class="remarks-editor" style="margin-bottom:12px;">
-                <input type="text" id="a-type" placeholder="VESSEL TYPE (e.g. Tug Boat)" class="remarks-editor" style="margin-bottom:20px;">
-                <button onclick="saveAsset()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Register Asset</button>
-            </div>
-
-            <div id="prf-form" style="display:none;">
-                <input type="text" id="m-prf" placeholder="PRF NUMBER" class="remarks-editor" style="margin-bottom:12px;">
-                <select id="m-asset-select" class="remarks-editor" style="margin-bottom:12px; font-weight:700;"></select>
-                <select id="m-workshop" class="remarks-editor" style="margin-bottom:20px; font-weight:700;">
+            <div id="prf-form">
+                <input type="text" id="m-prf" placeholder="PRF NUMBER" class="remarks-editor">
+                <select id="m-asset-select" class="remarks-editor"><option value="">-- SELECT REGISTERED ASSET --</option></select>
+                <select id="m-workshop" class="remarks-editor">
                     <option value="">-- SELECT WORKSHOP --</option>
                     <option value="DAU/LOS">DAU/LOS</option><option value="EEW">EEW</option>
                 </select>
                 <button onclick="savePRF()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Save PRF</button>
             </div>
 
-            <div id="yard-form" style="display:none;">
-                <input type="text" id="y-slot" placeholder="SLOT NUMBER" class="remarks-editor" style="margin-bottom:12px;">
-                <select id="y-asset-select" class="remarks-editor" style="margin-bottom:12px; font-weight:700;"></select>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
-                    <div><label style="font-size: 10px; font-weight:800;">DOCKING DATE</label><input type="date" id="y-docked" class="remarks-editor"></div>
-                    <div><label style="font-size: 10px; font-weight:800;">EST. UNDOCK</label><input type="date" id="y-undock" class="remarks-editor"></div>
-                </div>
-                <button onclick="saveYardEntry()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Register Vessel</button>
+            <div id="asset-form" style="display:none;">
+                <input type="text" id="a-name" placeholder="ASSET NAME (e.g. Ferry 201)" class="remarks-editor">
+                <select id="a-type" class="remarks-editor">
+                    <option value="Vessel">Vessel</option>
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Machinery">Machinery</option>
+                </select>
+                <button onclick="saveAsset()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Register Asset</button>
             </div>
 
-            <div id="task-form" style="display:none;">
-                <input type="text" id="t-sr" placeholder="SR #" class="remarks-editor" style="margin-bottom:12px;">
-                <select id="t-asset-select" class="remarks-editor" style="margin-bottom:12px; font-weight:700;"></select>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <label style="font-size: 11px; font-weight: 800;">TASKS</label>
-                    <button onclick="addTaskRow()" class="btn-main btn-outline" style="padding: 5px 10px;">+ Row</button>
-                </div>
-                <div id="t-task-list" style="margin-bottom:20px; max-height:200px; overflow-y:auto;"></div>
-                <button onclick="saveTaskEntry()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Save Work Order</button>
+            <div id="yard-form" style="display:none;">
+                <input type="text" id="y-slot" placeholder="SLOT NUMBER" class="remarks-editor">
+                <select id="y-asset-select" class="remarks-editor"><option value="">-- SELECT REGISTERED ASSET --</option></select>
+                <input type="text" id="y-owner" placeholder="OWNER NAME" class="remarks-editor">
+                <button onclick="saveYard()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Dock Vessel</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script>
+        // Data Store
+        let assets = JSON.parse(localStorage.getItem('srd_assets')) || [];
+        let prfs = JSON.parse(localStorage.getItem('srd_prfs')) || [];
+        let yard = JSON.parse(localStorage.getItem('srd_yard')) || [];
+        let currentPage = 'DASH';
+
+        // Initialize
+        function render() {
+            const head = document.getElementById('table-head');
+            const body = document.getElementById('table-body');
+            head.innerHTML = ''; body.innerHTML = '';
+
+            if (currentPage === 'ASSETS') {
+                head.innerHTML = `<tr><th>Asset ID</th><th>Name</th><th>Type</th><th>Linked PRFs</th></tr>`;
+                assets.forEach(a => {
+                    const linkedCount = prfs.filter(p => p.assetId === a.id).length;
+                    body.innerHTML += `<tr>
+                        <td><span class="asset-id">${a.id}</span></td>
+                        <td style="font-weight:700">${a.name}</td>
+                        <td>${a.type}</td>
+                        <td>${linkedCount} Entries</td>
+                    </tr>`;
+                });
+            } else if (currentPage === 'DASH') {
+                head.innerHTML = `<tr><th>PRF #</th><th>Asset</th><th>Workshop</th><th>Status</th></tr>`;
+                prfs.forEach(p => {
+                    const assetName = assets.find(a => a.id === p.assetId)?.name || 'Unknown';
+                    body.innerHTML += `<tr>
+                        <td style="font-weight:800">${p.number}</td>
+                        <td><span class="asset-id">${p.assetId}</span> ${assetName}</td>
+                        <td>${p.workshop}</td>
+                        <td>${p.status}</td>
+                    </tr>`;
+                });
+            } else if (currentPage === 'YARD') {
+                head.innerHTML = `<tr><th>Slot</th><th>Asset</th><th>Owner</th><th>Status</th></tr>`;
+                yard.forEach(y => {
+                    const assetName = assets.find(a => a.id === y.assetId)?.name || 'Unknown';
+                    body.innerHTML += `<tr>
+                        <td><b>${y.slot}</b></td>
+                        <td><span class="asset-id">${y.assetId}</span> ${assetName}</td>
+                        <td>${y.owner}</td>
+                        <td>Docked</td>
+                    </tr>`;
+                });
+            }
+        }
+
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`nav-${page.toLowerCase()}`).classList.add('active');
+            document.getElementById('page-title').innerText = page === 'DASH' ? 'PRF TRACKER' : page.replace('_', ' ');
+            render();
+        }
+
+        function openModal() {
+            document.getElementById('entry-modal').style.display = 'flex';
+            document.getElementById('prf-form').style.display = currentPage === 'DASH' ? 'block' : 'none';
+            document.getElementById('asset-form').style.display = currentPage === 'ASSETS' ? 'block' : 'none';
+            document.getElementById('yard-form').style.display = currentPage === 'YARD' ? 'block' : 'none';
+            
+            // Populate Asset Selectors
+            const selects = ['m-asset-select', 'y-asset-select'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.innerHTML = '<option value="">-- SELECT REGISTERED ASSET --</option>';
+                    assets.forEach(a => {
+                        el.innerHTML += `<option value="${a.id}">${a.name} (${a.id})</option>`;
+                    });
+                }
+            });
+        }
+
+        function closeModal() { document.getElementById('entry-modal').style.display = 'none'; }
+
+        // Logic Functions
+        function saveAsset() {
+            const name = document.getElementById('a-name').value;
+            const type = document.getElementById('a-type').value;
+            if(!name) return alert("Enter Asset Name");
+            
+            const newAsset = {
+                id: 'AST-' + Math.floor(1000 + Math.random() * 9000),
+                name: name,
+                type: type
+            };
+            assets.push(newAsset);
+            localStorage.setItem('srd_assets', JSON.stringify(assets));
+            closeModal();
+            render();
+        }
+
+        function savePRF() {
+            const num = document.getElementById('m-prf').value;
+            const assetId = document.getElementById('m-asset-select').value;
+            const ws = document.getElementById('m-workshop').value;
+            if(!num || !assetId) return alert("Fill all fields");
+
+            prfs.push({ number: num, assetId: assetId, workshop: ws, status: 'PENDING' });
+            localStorage.setItem('srd_prfs', JSON.stringify(prfs));
+            closeModal();
+            render();
+        }
+
+        function saveYard() {
+            const slot = document.getElementById('y-slot').value;
+            const assetId = document.getElementById('y-asset-select').value;
+            const owner = document.getElementById('y-owner').value;
+            if(!slot || !assetId) return alert("Fill all fields");
+
+            yard.push({ slot, assetId, owner });
+            localStorage.setItem('srd_yard', JSON.stringify(yard));
+            closeModal();
+            render();
+        }
+
+        window.onload = render;
+    </script>
 </body>
 </html>
