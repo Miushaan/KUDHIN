@@ -3,769 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Dockyard Update - Local Storage Dashboard</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    <title>SRD PORTAL | 2026</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Custom styles for aesthetic */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+        :root { 
+            --bg: #f8fafc; --side: #0f172a; --brand: #6366f1; --brand-light: #e0e7ff; 
+            --success: #10b981; --border: #cbd5e1; --text-main: #1e293b; 
+            --text-muted: #64748b; --danger: #f43f5e; --warning: #f59e0b; 
+            --card-bg: #ffffff; --input-bg: #ffffff; --table-head: #f1f5f9;
         }
-        .tab-button.active {
-            background-color: #1f2937;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        [data-theme="dark"] {
+            --bg: #020617; --side: #000000; --brand: #818cf8; --brand-light: rgba(99, 102, 241, 0.15);
+            --border: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; 
+            --card-bg: #0f172a; --input-bg: #1e293b; --table-head: #1e293b;
         }
-        .header-cell {
-            cursor: pointer;
-            user-select: none;
-            padding: 0.75rem 1rem;
-            text-align: left;
-            font-weight: 600;
-            color: #4b5563;
-            background-color: #e5e7eb;
-        }
-        .header-cell:hover {
-            background-color: #d1d5db;
-        }
-        .sort-icon {
-            display: inline-block;
-            margin-left: 0.5rem;
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-        }
-        .sort-asc .sort-icon {
-            border-bottom: 5px solid #1f2937;
-            margin-bottom: 2px;
-        }
-        .sort-desc .sort-icon {
-            border-top: 5px solid #1f2937;
-            margin-top: 2px;
-        }
-        /* Mobile adjustments */
-        @media (max-width: 768px) {
-            .table-container {
-                overflow-x: auto;
-            }
-            .data-table {
-                min-width: 750px; /* Ensure table is readable on small screens */
-            }
-            .db-table {
-                min-width: 900px; /* Ensure table is readable on small screens */
-            }
-        }
-        .save-button {
-            transition: all 0.2s;
-        }
-        .save-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; transition: 0.3s; }
+
+        /* Sidebar & Navigation */
+        .sidebar { width: 260px; background: var(--side); color: white; display: flex; flex-direction: column; padding: 40px 20px; flex-shrink: 0; z-index: 100; border-right: 2px solid rgba(255,255,255,0.1); transition: 0.3s ease; }
+        .sidebar.hidden { margin-left: -260px; }
+        .logo-box { margin-bottom: 40px; padding-left: 15px; border-left: 4px solid var(--brand); }
+        .logo-box h1 { font-size: 14px; font-weight: 800; line-height: 1.2; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .nav-btn { width: 100%; padding: 14px 18px; border-radius: 12px; border: 1px solid transparent; background: transparent; color: #94a3b8; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-bottom: 8px; text-transform: uppercase; }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-btn.active { background: var(--brand); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+
+        /* Layout Components */
+        .wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+        .top-bar { padding: 20px 40px; background: var(--card-bg); border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 20px; }
+        .search-wrap { flex: 1; max-width: 400px; }
+        .search-wrap input { width: 100%; padding: 12px 20px; border-radius: 14px; border: 2px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 13px; }
+
+        /* Table Styling */
+        .main-content { flex: 1; padding: 30px 40px; overflow: auto; }
+        .table-container { background: var(--card-bg); border-radius: 16px; border: 2px solid var(--border); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { position: sticky; top: 0; background: var(--table-head); padding: 18px 20px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid var(--border); z-index: 10; }
+        tbody td { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px; }
+
+        /* UI Elements */
+        .status-select { padding: 8px; border-radius: 10px; font-size: 10px; font-weight: 800; width: 140px; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
+        .remarks-editor { width: 100%; padding: 10px; background: var(--bg); border-radius: 8px; font-size: 12px; border: 1px solid var(--border); color: var(--text-main); font-family: inherit; }
+        .age-badge { font-weight: 800; font-size: 11px; color: var(--brand); background: var(--brand-light); padding: 4px 10px; border-radius: 6px; }
+
+        /* Modals */
+        .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 500px; border: 2px solid var(--brand); max-height: 90vh; overflow-y: auto; }
+        .btn-main { padding: 12px 20px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; font-size: 10px; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-outline { background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#1f2937',
-                        'secondary': '#4b5563',
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="p-4 md:p-8">
+<body data-theme="light">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-10">
-        <header class="mb-8 flex justify-between items-center border-b-4 border-indigo-500 pb-2">
-            <div>
-                <h1 class="text-3xl md:text-4xl font-extrabold text-primary">
-                    Dockyard Operations Dashboard
-                </h1>
-                <p class="text-secondary mt-1">Week 43 - Local Data Storage (Not shared)</p>
-            </div>
-            <div id="view-switcher" class="flex space-x-2">
-                <button id="preview-view-btn" class="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white shadow-md active-view-btn">
-                    Preview (Dashboard)
-                </button>
-                <button id="database-view-btn" class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300">
-                    Database (Edit)
-                </button>
-            </div>
-        </header>
-
-        <div id="app-container">
-            <!-- Preview View (Dashboard) -->
-            <div id="preview-view">
-                <div id="tab-buttons" class="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-3">
-                    <!-- Tab buttons dynamically updated with counts -->
-                </div>
-                <div id="tab-content" class="min-h-[400px]">
-                    <p class="text-gray-500 p-4">Select a tab to view the data.</p>
-                </div>
-            </div>
-
-            <!-- Database View (Editor) -->
-            <div id="database-view" class="hidden">
-                <div class="mb-6 flex items-center space-x-4">
-                    <label for="collection-select" class="font-semibold text-lg text-primary">Edit Collection:</label>
-                    <select id="collection-select" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="docked">Vessels On Dock</option>
-                        <option value="undocked">Vessels Undocked</option>
-                        <option value="planned">Planned Docking</option>
-                        <option value="revenue">Expected Revenue</option>
-                        <option value="projects">Project Status</option>
-                        <option value="inspection">Inspection Requests</option>
-                    </select>
-                </div>
-                <div id="database-content" class="min-h-[400px]">
-                    <!-- Editable form will be rendered here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Static Summary Section (Always visible in Preview) -->
-        <div id="summary-section" class="mt-10 pt-6 border-t border-gray-200">
-            <h3 class="text-xl font-bold text-primary mb-3">Key Operational Summary</h3>
-            <ul id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-                <!-- Summary content updated dynamically -->
-            </ul>
+    <div id="auth-overlay" style="position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 5000;">
+        <div style="background: white; padding: 40px; border-radius: 24px; width: 350px; text-align: center;">
+            <h2 style="margin-bottom: 20px; font-weight: 800;">SYSTEM ACCESS</h2>
+            <input type="email" id="login-email" placeholder="Email" class="remarks-editor" style="margin-bottom:10px;">
+            <input type="password" id="login-pass" placeholder="Password" class="remarks-editor" style="margin-bottom:20px;">
+            <button onclick="handleLogin()" class="btn-main btn-primary" style="width:100%; justify-content: center;">Login</button>
         </div>
     </div>
 
-    <script type="text/javascript">
+    <nav class="sidebar">
+        <div class="logo-box"><h1>SRD PORTAL<br>2026</h1></div>
+        <div style="flex: 1;">
+            <button id="nav-dash" onclick="switchPage('DASH')" class="nav-btn active">PRF TRACKER</button>
+            <button id="nav-yard" onclick="switchPage('YARD')" class="nav-btn">BOAT YARD LOG</button>
+            <button id="nav-tasks" onclick="switchPage('TASKS')" class="nav-btn">TASK MANAGER</button>
+            <button id="nav-assets" onclick="switchPage('ASSETS')" class="nav-btn">ASSET REGISTER</button>
+            <button id="nav-trans" onclick="switchPage('TRANS')" class="nav-btn">LOGS</button>
+        </div>
+        <button onclick="handleLogout()" class="nav-btn" style="color: var(--danger);">Sign Out</button>
+    </nav>
 
-        // --- GLOBAL APP STATE & CONFIG ---
-        const LOCAL_STORAGE_KEY = 'dockyardData';
-        let currentView = 'preview'; // 'preview' or 'database'
-        let appData = {}; // Local data cache
-        let currentCollection = 'docked'; // Currently selected collection for database view
-        let currentSort = { key: null, direction: 'asc', tab: null };
+    <div class="wrapper">
+        <header class="top-bar">
+            <div class="header-info"><h2 id="page-title">PRF TRACKER</h2></div>
+            <div class="search-wrap"><input type="text" id="main-search" placeholder="Search..." onkeyup="refreshTable()"></div>
+            <div class="action-group" style="display:flex; gap:10px; margin-left:auto;">
+                <button onclick="toggleTheme()" class="btn-main btn-outline" id="theme-icon">🌙</button>
+                <button onclick="exportPDF()" class="btn-main btn-outline">Export</button>
+                <button id="btn-create" onclick="openModal()" class="btn-main btn-primary">+ New Entry</button>
+            </div>
+        </header>
 
-        // --- DOM Elements ---
-        const tabContent = document.getElementById('tab-content');
-        const tabButtonsContainer = document.getElementById('tab-buttons');
-        const databaseContent = document.getElementById('database-content');
-        const previewView = document.getElementById('preview-view');
-        const databaseView = document.getElementById('database-view');
-        const previewBtn = document.getElementById('preview-view-btn');
-        const databaseBtn = document.getElementById('database-view-btn');
-        const collectionSelect = document.getElementById('collection-select');
-        
-        // Initial Data (Used to seed Local Storage on first run)
-        const initialVesselData = {
-            docked: [
-                { id: Date.now() + 1, vesselName: "MAHAA KORAKALI", customer: "MTCC ERD", dockedOn: "2021-08-16", customerType: "INTERNAL", age: 1527 },
-                { id: Date.now() + 2, vesselName: "NIYAAMA 2", customer: "MTCC TSD", dockedOn: "2024-03-10", customerType: "INTER-DIVISION", age: 593 },
-                { id: Date.now() + 3, vesselName: "YANMAR BOAT", customer: "MTCC TSD", dockedOn: "2024-05-18", customerType: "INTER-DIVISION", age: 435 },
-                { id: Date.now() + 4, vesselName: "SL-01", customer: "MTCC OSU", dockedOn: "2024-05-24", customerType: "INTER-DIVISION", age: 429 },
-                { id: Date.now() + 5, vesselName: "NIYAAMA 5", customer: "MTCC TSD", dockedOn: "2024-06-03", customerType: "INTER-DIVISION", age: 419 },
-                { id: Date.now() + 6, vesselName: "RTL 107", customer: "MTCC MRW", dockedOn: "2024-07-28", customerType: "INTER-DIVISION", age: 364 },
-                { id: Date.now() + 7, vesselName: "RTL 106", customer: "MTCC MRW", dockedOn: "2024-09-08", customerType: "INTER-DIVISION", age: 302 },
-                { id: Date.now() + 8, vesselName: "SL-07", customer: "MTCC OSU", dockedOn: "2025-10-15", customerType: "INTER-DIVISION", age: 285 },
-                { id: Date.now() + 9, vesselName: "AILA", customer: "MTCC TSD", dockedOn: "2025-01-20", customerType: "INTER-DIVISION", age: 277 },
-                { id: Date.now() + 10, vesselName: "JUPITER", customer: "ISLAND AVIATION", dockedOn: "2025-02-23", customerType: "EXTERNAL", age: 243 },
-                { id: Date.now() + 11, vesselName: "LIBRA", customer: "J.A TRADING PVT LTD", dockedOn: "2025-05-23", customerType: "EXTERNAL", age: 154 },
-                { id: Date.now() + 12, vesselName: "MALAAHAA", customer: "GALAXY ENTERPRISES PVT LTD", dockedOn: "2025-07-20", customerType: "EXTERNAL", age: 96 },
-                { id: Date.now() + 13, vesselName: "VIDHUVARU", customer: "STELCO", dockedOn: "2025-09-03", customerType: "EXTERNAL", age: 51 },
-                { id: Date.now() + 14, vesselName: "HEALTH-1", customer: "HPA", dockedOn: "2025-10-18", customerType: "EXTERNAL", age: 6 },
-                { id: Date.now() + 15, vesselName: "EXPRESS-2", customer: "MTCC TSD", dockedOn: "2025-10-22", customerType: "INTER-DIVISION", age: 2 },
-            ],
-            undocked: [
-                { id: Date.now() + 16, vesselName: "KOIMALA-6", owner: "MTCC DREDGING", undockedOn: "2025-10-01" },
-                { id: Date.now() + 17, vesselName: "MARUTU-2", owner: "NAZMEEL MOHAMED", undockedOn: "2025-10-02" },
-                { id: Date.now() + 18, vesselName: "K.A. MAIDOO", owner: "K.A TRADING", undockedOn: "2025-10-02" },
-                { id: Date.now() + 19, vesselName: "KANDHARI", owner: "AISHATH SUAD", undockedOn: "2025-10-05" },
-                { id: Date.now() + 20, vesselName: "DHONKANDHAARU", owner: "MIFCO", undockedOn: "2025-10-07" },
-                { id: Date.now() + 21, vesselName: "KOIMALA-1", owner: "MTCC DREDGING", undockedOn: "2025-10-07" },
-                { id: Date.now() + 22, vesselName: "BODUMAIYA", owner: "AHMED ADAM", undockedOn: "2025-10-08" },
-                { id: Date.now() + 23, vesselName: "MALIKHA-2", owner: "ADDU SHIPPING", undockedOn: "2025-10-09" },
-                { id: Date.now() + 24, vesselName: "KOIMALA 5", owner: "MTCC TSD", undockedOn: "2025-10-12" },
-                { id: Date.now() + 25, vesselName: "KALHIHI", owner: "MTCC TSD", undockedOn: "2025-10-13" },
-                { id: Date.now() + 26, vesselName: "VILUFUSHI", owner: "ISLAND AVIATION", undockedOn: "2025-10-14" },
-                { id: Date.now() + 27, vesselName: "YAGEEN-1", owner: "MTCC TSD", undockedOn: "2025-10-15" },
-                { id: Date.now() + 28, vesselName: "K.A. TRADING", owner: "K.A TRADING", undockedOn: "2025-10-17" },
-                { id: Date.now() + 29, vesselName: "ACHILLES", owner: "BLUE MARINE", undockedOn: "2025-10-20" },
-                { id: Date.now() + 30, vesselName: "EXPRESS-1", owner: "MTCC TSD", undockedOn: "2025-10-21" },
-            ],
-            planned: [
-                { id: Date.now() + 31, vesselName: "NALA 7", owner: "NALAHIYA TRADING PVT LTD", requestedDocking: "2025-10-25", estUndocking: "2025-10-26", sizeFt: 117 },
-                { id: Date.now() + 32, vesselName: "MAARANGA", owner: "STO", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 144.75 },
-                { id: Date.now() + 33, vesselName: "AJAAZ QUEEN", owner: "AJAAZ FUEL PVT LTD", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 61.66 },
-                { id: Date.now() + 34, vesselName: "BONTHI-2", owner: "MOHAMED ABDUL KAREEM", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 44.77 },
-                { id: Date.now() + 35, vesselName: "CRUISER-5", owner: "HASSAN ZAREER", requestedDocking: "ASAP", estUndocking: "-", sizeFt: 48.38 },
-                { id: Date.now() + 36, vesselName: "HIRIWAVE GREY", owner: "HUSHAM ABDUL SHAKOOR", requestedDocking: "DELAYED", estUndocking: "-", sizeFt: 38.21 },
-                { id: Date.now() + 37, vesselName: "FUSCO", owner: "MIFCO", requestedDocking: "ON-GOING", estUndocking: "-", sizeFt: 25.92 },
-            ],
-            revenue: [
-                { id: Date.now() + 38, customer: "ZAHIRA MOHAMED", vessel: "MAZI", value: 58280.94, status: "Pending" },
-                { id: Date.now() + 39, customer: "NAZMEEL MOHAMED", vessel: "JUMBO", value: 40387.89, status: "Pending" },
-                { id: Date.now() + 40, customer: "CENTURION TRANSPORT SOLUTION PVT LTD", vessel: "MOONIMAA", value: 33377.76, status: "Pending" },
-                { id: Date.now() + 41, customer: "UKAS MALDIVES PVT LTD", vessel: "HAMATHI", value: 16182.85, status: "Pending" },
-                { id: Date.now() + 42, customer: "IBRAHIM IMTHIYAZ", vessel: "WINTER", value: 14675.88, status: "Pending" },
-                { id: Date.now() + 43, customer: "MERIDIAM SERVICES PVT LTD", vessel: "RIYA-11", value: 14619.48, status: "Pending" },
-                { id: Date.now() + 44, customer: "V.A.M AND COMPANY PVT LTD", vessel: "CONCORD", value: 5598.28, status: "Pending" },
-                { id: Date.now() + 45, customer: "ALI RASHEED", vessel: "BAHTHI", value: 4646.18, status: "Pending" },
-                { id: Date.now() + 46, customer: "HUSHAM ABDUL SHAKOOR", vessel: "HIRIWAVE GREY", value: 3881.67, status: "Pending" },
-            ],
-            projects: [
-                { id: Date.now() + 47, type: "External Project", name: "LIBRA", status: "74% Complete (Delayed due to rain)", details: "Est. Completion: Oct 24, 2025. Pending: Rudder stock, Propeller/shaft/cutless bearing, Engine installation/alignment." },
-                { id: Date.now() + 48, type: "External Project", name: "MPL VEERU 2", status: "New Work", details: "Work started on Oct 21, 2025." },
-                { id: Date.now() + 49, type: "Internal Plan", name: "SL-05 (Ferry Dhoani)", status: "Scope Change", details: "Planning major overhaul instead of top-overhaul (10,000 engine hours closing in)." },
-                { id: Date.now() + 50, type: "Internal Plan", name: "URANUS", status: "New Work", details: "Work started on Oct 21, 2025. Tasks: engine troubleshooting and mixing elbow replacement." },
-                { id: Date.now() + 51, type: "Internal Plan", name: "KOIMALA-2", status: "Planned", details: "Major fiberglass repair planned after KOIMALA-1 work is complete." },
-                { id: Date.now() + 52, type: "Vessel Update", name: "JUPITER", status: "On Hold", details: "Undocking put on hold (Oct 22, 2025) after hull damage was found." },
-                { id: Date.now() + 53, type: "Vessel Update", name: "RTL 107", status: "On Hold", details: "Engine works on hold until 'PIN' spare part is received (on order)." },
-                { id: Date.now() + 54, type: "Vessel Update", name: "SL-01", status: "98% Complete", details: "Fiber works nearing completion (as of Oct 25, 2025)." },
-                { id: Date.now() + 55, type: "Pending BOQ", name: "LIBRA", status: "Quotation Pending", details: "BOQ submitted. Quotation value MVR 189,175.27 (With GST)." },
-                { id: Date.now() + 56, type: "Pending BOQ", name: "VIDHUVARU", status: "BOQ Pending", details: "Awaiting Bill of Quantities." },
-                { id: Date.now() + 57, type: "Pending BOQ", name: "KSR MULTICAT", status: "BOQ Pending", details: "Awaiting Bill of Quantities." },
-            ],
-            inspection: [
-                { id: Date.now() + 58, vessel: "EXPLORER 2", location: "Thilafushi", status: "Completed", date: "2025-09-09" },
-                { id: Date.now() + 59, vessel: "MAHAA KALAMINJA", location: "Gdh. Thinadhoo", status: "Completed", date: "Unknown" },
-                { id: Date.now() + 60, vessel: "GURAAB", location: "K. Male'", status: "Pending", date: "Unknown" },
-                { id: Date.now() + 61, vessel: "ALUMINIUM BOAT", location: "Soneva Jani Resort", status: "Completed", date: "2025-09-14" },
-                { id: Date.now() + 62, vessel: "OCEAN RANGER", location: "FABRICATION/INSTALLATION OF SS RAILING", status: "Completed", date: "2025-09-14" },
-                { id: Date.now() + 63, vessel: "REDHAN BOAT", location: "K.Funadhoo", status: "Completed", date: "2025-10-02" },
-                { id: Date.now() + 64, vessel: "ONE & ONLY REETHI RAH RESORT", location: "K.Male'", status: "Inspected", date: "2025-10-09" },
-            ]
-        };
+        <main class="main-content">
+            <div class="table-container">
+                <table><thead id="table-head"></thead><tbody id="table-body"></tbody></table>
+            </div>
+        </main>
+    </div>
 
-
-        // --- UTILITY FUNCTIONS ---
-
-        const generateUniqueId = () => Date.now() + Math.floor(Math.random() * 1000000);
-
-        const formatCurrency = (value) => {
-            if (typeof value === 'number') {
-                return `MVR ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
-            return value;
-        };
-
-        const formatDate = (dateString) => {
-            if (!dateString || dateString.length < 10 || dateString.includes("ASAP") || dateString.includes("DELAYED") || dateString.includes("ON-GOING") || dateString.includes("-") || dateString.includes("Unknown")) {
-                return dateString;
-            }
-            try {
-                // Ensure date parsing works correctly across browsers for YYYY-MM-DD
-                const date = new Date(dateString.replace(/-/g, '/'));
-                const options = { year: 'numeric', month: 'short', day: 'numeric' };
-                return date.toLocaleDateString('en-US', options);
-            } catch (e) {
-                return dateString;
-            }
-        };
-
-        const getAge = (dockedOn) => {
-            if (!dockedOn || dockedOn.length < 10) return 0;
-            try {
-                const oneDay = 24 * 60 * 60 * 1000; // milliseconds in a day
-                const today = new Date();
-                const dockedDate = new Date(dockedOn.replace(/-/g, '/'));
-                const diffDays = Math.round(Math.abs((today - dockedDate) / oneDay));
-                return diffDays;
-            } catch (e) {
-                return 0;
-            }
-        };
-
-        const generateFieldInput = (key, value, docId) => {
-            let type = 'text';
-            let classes = 'p-1 border border-gray-300 rounded-md w-full focus:ring-indigo-500 focus:border-indigo-500';
+    <div id="entry-modal" class="overlay" onclick="if(event.target===this) closeModal()">
+        <div class="modal">
+            <h2 id="modal-title" style="margin-bottom:20px; font-weight:800;">NEW ENTRY</h2>
             
-            if (typeof value === 'number' || key.toLowerCase().includes('sizeft')) {
-                type = 'number';
-                classes += ' text-right';
-            } else if (key.toLowerCase().includes('date') || key.toLowerCase().includes('on')) {
-                type = 'date';
-            }
+            <div id="prf-form" style="display:none;">
+                <input type="text" id="m-prf" placeholder="PRF #" class="remarks-editor" style="margin-bottom:10px;">
+                <select id="m-asset-select" class="remarks-editor" style="margin-bottom:10px;"></select>
+                <select id="m-workshop" class="remarks-editor" style="margin-bottom:20px;">
+                    <option value="">Select Workshop</option><option value="DAU/LOS">DAU/LOS</option><option value="EEW">EEW</option>
+                </select>
+                <button onclick="savePRF()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Save PRF</button>
+            </div>
 
-            // Exclude fixed fields from direct editing
-            if (key === 'id' || key === 'age') {
-                return `<span class="${classes} bg-gray-100 italic text-gray-500">${value}</span>`;
-            }
+            <div id="asset-form" style="display:none;">
+                <input type="text" id="a-name" placeholder="Asset Name" class="remarks-editor" style="margin-bottom:10px;">
+                <input type="text" id="a-type" placeholder="Type (e.g. Tug)" class="remarks-editor" style="margin-bottom:20px;">
+                <button onclick="saveAsset()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Register Asset</button>
+            </div>
 
-            return `<input type="${type}" value="${value}" data-doc-id="${docId}" data-key="${key}" class="${classes}" onchange="updateRecord(this)">`;
-        };
-        
-        const getDisplayKey = (key) => {
-            let display = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            if (key === 'dockedOn') return 'Docked On';
-            if (key === 'estUndocking') return 'Est. Undock Date';
-            if (key === 'requestedDocking') return 'Req. Dock Date';
-            if (key === 'value') return 'Value (MVR)';
-            if (key === 'sizeFt') return 'Size (Ft)';
-            return display;
-        }
+            <div id="yard-form" style="display:none;">
+                <input type="text" id="y-slot" placeholder="Slot" class="remarks-editor" style="margin-bottom:10px;">
+                <select id="y-asset-select" class="remarks-editor" style="margin-bottom:10px;"></select>
+                <input type="date" id="y-docked" class="remarks-editor" style="margin-bottom:20px;">
+                <button onclick="saveYardEntry()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Register Docking</button>
+            </div>
 
-        // --- LOCAL STORAGE DATA MANAGEMENT ---
+            <div id="task-form" style="display:none;">
+                <input type="text" id="t-sr" placeholder="SR #" class="remarks-editor" style="margin-bottom:10px;">
+                <select id="t-asset-select" class="remarks-editor" style="margin-bottom:10px;"></select>
+                <input type="text" id="t-wo" placeholder="WO #" class="remarks-editor" style="margin-bottom:20px;">
+                <button onclick="saveTaskEntry()" class="btn-main btn-primary" style="width:100%; justify-content:center;">Create WO</button>
+            </div>
+        </div>
+    </div>
 
-        const loadDataFromLocalStorage = () => {
-            try {
-                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (storedData) {
-                    return JSON.parse(storedData);
-                }
-            } catch (e) {
-                console.error("Error loading data from local storage:", e);
-                // Fallback to initial data if storage is corrupted
-                return null;
-            }
-            return null;
-        };
-
-        const saveDataToLocalStorage = () => {
-            try {
-                // Ensure docked items have the correct age calculated before saving
-                appData.docked = (appData.docked || []).map(item => ({
-                    ...item,
-                    age: getAge(item.dockedOn)
-                }));
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData));
-                console.log("Data saved to local storage.");
-            } catch (e) {
-                console.error("Error saving data to local storage:", e);
-            }
-            // Trigger UI update
-            updateUI();
-        };
-
-        const updateRecord = (inputElement) => {
-            const docId = parseInt(inputElement.dataset.docId);
-            const key = inputElement.dataset.key;
-            let value = inputElement.value;
-
-            // Type coercion
-            if (inputElement.type === 'number') {
-                value = parseFloat(value);
-            }
-
-            const collection = appData[currentCollection];
-            if (collection) {
-                const record = collection.find(item => item.id === docId);
-                if (record) {
-                    record[key] = value;
-                    console.log("Record updated:", docId, key, value);
-                    saveDataToLocalStorage();
-                }
-            }
-        };
-        
-        const deleteRecord = (docId) => {
-            if (!docId) return;
-
-            if (!confirm(`Are you sure you want to delete this record?`)) {
-                return;
-            }
-            
-            appData[currentCollection] = (appData[currentCollection] || []).filter(item => item.id !== docId);
-            console.log("Record deleted:", docId);
-            saveDataToLocalStorage();
-        };
-
-        const addRecord = () => {
-            const keys = Object.keys(appData[currentCollection][0] || {});
-            const newId = generateUniqueId();
-            
-            const newRecord = { id: newId };
-            keys.filter(k => k !== 'id' && k !== 'age').forEach(key => {
-                newRecord[key] = key.toLowerCase().includes('name') || key.toLowerCase().includes('vessel') ? 'New Vessel' :
-                                 key.toLowerCase().includes('date') || key.toLowerCase().includes('on') ? new Date().toISOString().slice(0, 10) :
-                                 key.toLowerCase().includes('value') || typeof appData[currentCollection][0][key] === 'number' ? 0 : 'N/A';
-            });
-            
-            if (!appData[currentCollection]) {
-                appData[currentCollection] = [];
-            }
-            appData[currentCollection].push(newRecord);
-
-            console.log("New record added.");
-            saveDataToLocalStorage();
-            
-            // Re-render editor after adding
-            if (currentView === 'database') {
-                renderDatabasePage();
-            }
-        };
-
-        // Custom confirm function (since alert() is forbidden)
-        const confirm = (message) => {
-            return window.confirm(message);
-        }
-
-        // --- INITIALIZATION AND UI UPDATE ---
-
-        const initializeLocalData = () => {
-            const storedData = loadDataFromLocalStorage();
-            if (storedData) {
-                appData = storedData;
-                console.log("Loaded data from local storage.");
-            } else {
-                // Seed data on first run
-                appData = initialVesselData;
-                saveDataToLocalStorage();
-                console.log("Seeded initial data and saved to local storage.");
-            }
-            // Initial UI rendering
-            updateUI();
-        };
-
-        const updateUI = () => {
-            updateTabCounters();
-            updateSummaryCards();
-
-            if (currentView === 'preview') {
-                // Find currently active tab or default to 'docked'
-                const activeTab = document.querySelector('.tab-button.active')?.dataset.tab || 'docked';
-                displayContent(activeTab);
-            } else if (currentView === 'database') {
-                renderDatabasePage();
-            }
-        }
-
-
-        // --- PREVIEW VIEW (DASHBOARD) LOGIC ---
-
-        const updateTabCounters = () => {
-            const tabs = [
-                { id: 'docked', title: 'Vessels On Dock' },
-                { id: 'undocked', title: 'Undocked (Oct)' },
-                { id: 'planned', title: 'Planned Docking' },
-                { id: 'revenue', title: 'Expected Revenue' },
-                { id: 'projects', title: 'Project Status & BOQs' },
-                { id: 'inspection', title: 'Inspection Requests' },
-            ];
-
-            tabButtonsContainer.innerHTML = tabs.map(tab => {
-                const count = appData[tab.id]?.length || 0;
-                const totalRevenue = tab.id === 'revenue' ? appData.revenue?.reduce((sum, item) => sum + item.value, 0) : null;
-                const countDisplay = totalRevenue !== null ? `(MVR ${Math.round(totalRevenue / 1000)}k)` : `(${count})`;
-                const isActive = document.querySelector('.tab-button.active')?.dataset.tab === tab.id;
-                
-                return `<button data-tab="${tab.id}" class="tab-button px-4 py-2 text-sm font-medium rounded-full transition duration-150 ease-in-out ${isActive ? 'bg-primary text-white' : 'text-secondary hover:bg-gray-200'}">
-                    ${tab.title} ${countDisplay}
-                </button>`;
-            }).join('');
-            
-            document.querySelectorAll('.tab-button').forEach(button => {
-                // Ensure initial active tab is set correctly on first load
-                if (!document.querySelector('.tab-button.active')) {
-                    setActiveTab('docked');
-                }
-                button.addEventListener('click', (e) => setActiveTab(e.currentTarget.dataset.tab));
-            });
-        };
-
-        const updateSummaryCards = () => {
-            const dockedData = appData.docked || [];
-            const revenueData = appData.revenue || [];
-
-            const totalDocked = dockedData.length;
-            const interDiv = dockedData.filter(v => v.customerType === 'INTER-DIVISION').length;
-            const external = dockedData.filter(v => v.customerType === 'EXTERNAL').length;
-            const internal = dockedData.filter(v => v.customerType === 'INTERNAL').length;
-
-            const longestDocked = dockedData.reduce((max, vessel) => vessel.age > max.age ? vessel : max, { age: 0, vesselName: 'N/A' });
-            const totalRevenue = revenueData.reduce((sum, item) => sum + item.value, 0);
-
-            document.getElementById('summary-cards').innerHTML = `
-                <li class="bg-indigo-50 p-4 rounded-lg shadow-inner">
-                    <span class="font-semibold text-indigo-700">Total Vessels On Dock:</span> ${totalDocked}
-                    <span class="block text-xs text-gray-500">${interDiv} Inter-Division, ${external} External, ${internal} Internal</span>
-                </li>
-                <li class="bg-indigo-50 p-4 rounded-lg shadow-inner">
-                    <span class="font-semibold text-indigo-700">Highest Age:</span> ${longestDocked.vesselName} (${longestDocked.age} days)
-                    <span class="block text-xs text-gray-500">Longest duration on dock.</span>
-                </li>
-                <li class="bg-indigo-50 p-4 rounded-lg shadow-inner">
-                    <span class="font-semibold text-indigo-700">Total Expected Revenue:</span> ${formatCurrency(totalRevenue)}
-                    <span class="block text-xs text-gray-500">From ${revenueData.length} pending quotations.</span>
-                </li>
-            `;
-        }
-
-        const renderTable = (data, tabName) => {
-            if (!data || data.length === 0) {
-                return `<p class="text-gray-500 p-4">No data available for this section.</p>`;
-            }
-
-            const isAgeTable = tabName === 'docked';
-            const isRevenueTable = tabName === 'revenue';
-
-            // Use the first object's keys to define columns (filter out internal IDs)
-            const headers = Object.keys(data[0]).filter(key => key !== 'id').map(key => ({ key, display: getDisplayKey(key) }));
-
-            let tableHTML = `
-                <div class="table-container">
-                    <table class="data-table w-full border-collapse rounded-lg overflow-hidden shadow-lg">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                ${headers.map(h => `
-                                    <th class="header-cell ${currentSort.key === h.key && currentSort.tab === tabName ? 'sort-' + currentSort.direction : ''}" data-key="${h.key}" onclick="sortTable('${h.key}', '${tabName}')">
-                                        ${h.display}
-                                        <span class="sort-icon"></span>
-                                    </th>
-                                `).join('')}
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            ${data.map(item => `
-                                <tr class="hover:bg-gray-50 transition duration-100">
-                                    ${headers.map(h => {
-                                        let cellContent = item[h.key];
-                                        let classes = 'p-3 text-sm text-gray-800';
-                                        
-                                        if (h.key.toLowerCase().includes('date') || h.key.toLowerCase().includes('on')) {
-                                            cellContent = formatDate(cellContent);
-                                            classes += ' font-mono';
-                                        } else if (h.key === 'age' && isAgeTable) {
-                                            cellContent = `${cellContent} days`;
-                                            classes += ' font-bold text-red-600';
-                                        } else if (h.key === 'value' && isRevenueTable) {
-                                            cellContent = formatCurrency(cellContent);
-                                            classes += ' font-mono text-green-700';
-                                        } else if (h.key === 'status') {
-                                            const color = cellContent.includes('Pending') || cellContent.includes('On Hold') ? 'text-yellow-700 bg-yellow-100' : 
-                                                          cellContent.includes('Complete') || cellContent.includes('Completed') || cellContent.includes('98%') ? 'text-green-700 bg-green-100' : 
-                                                          'text-indigo-700 bg-indigo-100';
-                                            cellContent = `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${color}">${cellContent}</span>`;
-                                        } else if (h.key === 'customerType') {
-                                            const color = cellContent === 'INTERNAL' ? 'bg-red-100 text-red-800' :
-                                                          cellContent === 'EXTERNAL' ? 'bg-blue-100 text-blue-800' :
-                                                          'bg-purple-100 text-purple-800';
-                                            cellContent = `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${color}">${cellContent}</span>`;
-                                        }
-                                        
-                                        return `<td class="${classes}">${cellContent}</td>`;
-                                    }).join('')}
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            return tableHTML;
-        };
-
-        const sortTable = (key, tabName) => {
-            const data = appData[tabName] || [];
-
-            let direction = 'asc';
-            if (currentSort.key === key && currentSort.tab === tabName) {
-                direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            }
-
-            // Create a copy for sorting
-            const sortedData = [...data].sort((a, b) => {
-                let valA = a[key];
-                let valB = b[key];
-
-                if (key.toLowerCase().includes('date') || key.toLowerCase().includes('on')) {
-                    // Treat dates as Date objects for proper sorting
-                    valA = new Date(valA || 0); 
-                    valB = new Date(valB || 0);
-                } else if (typeof valA === 'string') {
-                    valA = valA.toLowerCase();
-                    valB = valB.toLowerCase();
-                }
-
-                if (valA < valB) return direction === 'asc' ? -1 : 1;
-                if (valA > valB) return direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-
-            currentSort = { key, direction, tab: tabName };
-            displayContent(tabName, sortedData);
-        };
-
-        const displayContent = (tabName, dataOverride) => {
-            let data = dataOverride || appData[tabName] || [];
-            let contentHTML = '';
-
-            // Ensure the sorting key is reset if we switch tabs without a data override
-            if (!dataOverride && currentSort.tab !== tabName) {
-                currentSort = { key: null, direction: 'asc', tab: tabName };
-            }
-
-            if (tabName === 'projects') {
-                const projectGroups = data.reduce((acc, item) => {
-                    (acc[item.type] = acc[item.type] || []).push(item);
-                    return acc;
-                }, {});
-
-                contentHTML = Object.keys(projectGroups).map(type => {
-                    const groupData = projectGroups[type];
-                    return `
-                        <div class="mb-8">
-                            <h4 class="text-xl font-semibold text-primary mb-3 mt-4 border-l-4 border-indigo-400 pl-3">${type} (${groupData.length})</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                ${groupData.map(item => `
-                                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <p class="font-bold text-lg text-gray-900">${item.name}</p>
-                                            <span class="px-3 py-1 text-xs font-semibold rounded-full ${item.status.includes('On Hold') || item.status.includes('Pending') ? 'bg-yellow-200 text-yellow-800' : item.status.includes('Complete') || item.status.includes('98%') ? 'bg-green-200 text-green-800' : 'bg-indigo-200 text-indigo-800'}">${item.status}</span>
-                                        </div>
-                                        <p class="text-sm text-gray-600">${item.details}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            } else if (tabName === 'revenue') {
-                const totalRevenue = data.reduce((sum, item) => sum + item.value, 0);
-                contentHTML = `
-                    <div class="mb-6 p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-                        <p class="text-lg font-bold text-green-800">Total Expected Revenue (Pending Quotes):</p>
-                        <p class="text-3xl font-extrabold text-green-700">${formatCurrency(totalRevenue)}</p>
-                        <p class="text-sm text-green-600">${data.length} pending quotations.</p>
-                    </div>
-                    ${renderTable(data, tabName)}
-                `;
-            } else {
-                contentHTML = renderTable(data, tabName);
-            }
-
-            tabContent.innerHTML = contentHTML;
-        };
-
-        const setActiveTab = (selectedTab) => {
-            document.querySelectorAll('.tab-button').forEach(button => {
-                if (button.dataset.tab === selectedTab) {
-                    button.classList.add('active', 'bg-primary', 'text-white');
-                    button.classList.remove('text-secondary', 'hover:bg-gray-200');
-                } else {
-                    button.classList.remove('active', 'bg-primary', 'text-white');
-                    button.classList.add('text-secondary', 'hover:bg-gray-200');
-                }
-            });
-            displayContent(selectedTab);
-        };
-
-        // --- DATABASE VIEW (EDITOR) LOGIC ---
-
-        const renderDatabasePage = () => {
-            const data = appData[currentCollection] || [];
-            
-            if (data.length === 0) {
-                databaseContent.innerHTML = `<p class="p-4 text-gray-500">No data found in the **${currentCollection}** collection. Click "Add New Record" to start.</p>`;
-                renderAddRecordButton();
-                return;
-            }
-
-            // Get all unique keys from the data (excluding 'id')
-            const allKeys = Object.keys(data[0]).filter(key => key !== 'id');
-
-            const tableHTML = `
-                <div class="table-container shadow-lg rounded-xl overflow-hidden">
-                    <table class="db-table w-full border-collapse">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="p-2 text-left text-sm font-semibold text-gray-600 w-12">#</th>
-                                ${allKeys.map(key => `<th class="p-2 text-left text-sm font-semibold text-gray-600">${getDisplayKey(key)}</th>`).join('')}
-                                <th class="p-2 text-sm font-semibold text-gray-600 w-24">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map((item, index) => `
-                                <tr class="border-t hover:bg-red-50 transition duration-100">
-                                    <td class="p-2 text-xs font-medium text-gray-500">${index + 1}</td>
-                                    ${allKeys.map(key => `
-                                        <td class="p-1">
-                                            ${generateFieldInput(key, item[key], item.id)}
-                                        </td>
-                                    `).join('')}
-                                    <td class="p-2 text-center">
-                                        <button onclick="deleteRecord(${item.id})" class="text-red-500 hover:text-red-700 transition duration-150">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            databaseContent.innerHTML = tableHTML;
-            renderAddRecordButton();
-        };
-
-        const renderAddRecordButton = () => {
-            const buttonHtml = `
-                <button onclick="addRecord()" class="save-button mt-4 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-200">
-                    + Add New Record to ${getDisplayKey(currentCollection)}
-                </button>
-            `;
-            // Append button below the table
-            let btnContainer = document.getElementById('add-record-container');
-            if (!btnContainer) {
-                btnContainer = document.createElement('div');
-                btnContainer.id = 'add-record-container';
-                databaseContent.appendChild(btnContainer);
-            }
-            btnContainer.innerHTML = buttonHtml;
-        }
-
-
-        // --- VIEW SWITCHING ---
-
-        const switchView = (view) => {
-            currentView = view;
-            if (view === 'preview') {
-                previewView.classList.remove('hidden');
-                databaseView.classList.add('hidden');
-                previewBtn.classList.add('active-view-btn', 'bg-indigo-600', 'text-white');
-                previewBtn.classList.remove('bg-gray-200', 'text-gray-800');
-                databaseBtn.classList.add('bg-gray-200', 'text-gray-800');
-                databaseBtn.classList.remove('active-view-btn', 'bg-indigo-600', 'text-white');
-                
-                // Ensure the preview content is rendered
-                setActiveTab(document.querySelector('.tab-button.active')?.dataset.tab || 'docked');
-
-            } else {
-                databaseView.classList.remove('hidden');
-                previewView.classList.add('hidden');
-                databaseBtn.classList.add('active-view-btn', 'bg-indigo-600', 'text-white');
-                databaseBtn.classList.remove('bg-gray-200', 'text-gray-800');
-                previewBtn.classList.add('bg-gray-200', 'text-gray-800');
-                previewBtn.classList.remove('active-view-btn', 'bg-indigo-600', 'text-white');
-
-                // Ensure the database content is rendered
-                renderDatabasePage();
-            }
-        };
-
-        // --- EVENT HANDLERS & INITIALIZATION ---
-
-        collectionSelect.addEventListener('change', (e) => {
-            currentCollection = e.target.value;
-            renderDatabasePage();
-        });
-
-        previewBtn.addEventListener('click', () => switchView('preview'));
-        databaseBtn.addEventListener('click', () => switchView('database'));
-        
-        // Expose functions to global scope for use by onclick/onchange in generated HTML
-        window.sortTable = sortTable;
-        window.deleteRecord = deleteRecord;
-        window.updateRecord = updateRecord;
-        window.addRecord = addRecord;
-
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeLocalData();
-        });
-    </script>
-
+    <script type="module" src="script.js"></script>
 </body>
 </html>
