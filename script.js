@@ -13,10 +13,10 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-let logs = [], yardLogs = [], assets = [], transLogs = [], taskLogs = [], currentPage = 'DASH';
+let logs = [], yardLogs = [], assets = [], transactionLogs = [], taskLogs = [], currentPage = 'DASH';
 
-// --- AUTH ---
-window.handleLogin = () => signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value).catch(() => alert("Access Denied"));
+// --- AUTH & DATA ---
+window.handleLogin = () => signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value).catch(() => alert("Denied"));
 window.handleLogout = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
@@ -42,17 +42,17 @@ function initData() {
         if(currentPage === 'TASKS') refreshTable();
     });
     onValue(ref(db, 'transactions'), snap => {
-        transLogs = snap.val() ? Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] })) : [];
+        transactionLogs = snap.val() ? Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] })) : [];
         if(currentPage === 'TRANS') refreshTable();
     });
 }
 
-// --- CORE FUNCTIONS ---
+// --- LOGIC ---
 window.switchPage = (page) => {
     currentPage = page;
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-' + page.toLowerCase()).classList.add('active');
-    document.getElementById('page-title').innerText = page.replace('DASH','PRF TRACKER').replace('TRANS','LOGS');
+    document.getElementById('page-title').innerText = page.replace('DASH', 'PRF TRACKER').replace('TRANS', 'LOGS');
     refreshTable();
 };
 
@@ -62,17 +62,16 @@ window.refreshTable = () => {
     const body = document.getElementById('table-body');
 
     if (currentPage === 'ASSETS') {
-        head.innerHTML = `<tr><th>Asset ID</th><th>Vessel Name</th><th>Type</th><th>Added Date</th><th style="width:40px"></th></tr>`;
+        head.innerHTML = `<tr><th>Asset #</th><th>Name</th><th>Type</th><th style="width:40px"></th></tr>`;
         body.innerHTML = assets.filter(a => a.name?.includes(q) || a.assetNo?.includes(q)).map(a => `
             <tr>
                 <td style="font-weight:800; color:var(--brand);">${a.assetNo}</td>
                 <td><input class="remarks-editor" value="${a.name}" onblur="updateField('asset_register','${a.id}','name',this.value.toUpperCase())"></td>
                 <td><input class="remarks-editor" value="${a.type}" onblur="updateField('asset_register','${a.id}','type',this.value.toUpperCase())"></td>
-                <td>${a.dateAdded}</td>
-                <td><button onclick="deleteEntry('asset_register','${a.id}')" style="color:var(--danger); border:none; background:none;">&times;</button></td>
+                <td><button onclick="deleteEntry('asset_register','${a.id}')" style="color:var(--danger); background:none; border:none;">&times;</button></td>
             </tr>`).join('');
     } else if (currentPage === 'YARD') {
-        head.innerHTML = `<tr><th>Slot</th><th>Asset</th><th>Docked</th><th>Age</th><th>Status</th><th>Actions</th></tr>`;
+        head.innerHTML = `<tr><th>Slot</th><th>Asset</th><th>Docked</th><th>Age</th><th>Status</th></tr>`;
         body.innerHTML = yardLogs.filter(l => l.asset?.includes(q)).map(l => {
             const age = Math.floor((new Date() - new Date(l.docked)) / (1000*60*60*24));
             return `<tr>
@@ -86,7 +85,6 @@ window.refreshTable = () => {
                         <option value="Undocked" ${l.status==='Undocked'?'selected':''}>Undocked</option>
                     </select>
                 </td>
-                <td><button onclick="deleteEntry('yard_logs','${l.id}')" style="color:var(--danger); border:none; background:none;">&times;</button></td>
             </tr>`;
         }).join('');
     } else if (currentPage === 'DASH') {
@@ -100,20 +98,22 @@ window.refreshTable = () => {
                     <select class="status-select" onchange="updateField('prf_logs','${l.id}','status',this.value)">
                         <option value="Pending" ${l.status==='Pending'?'selected':''}>Pending</option>
                         <option value="Approved" ${l.status==='Approved'?'selected':''}>Approved</option>
-                        <option value="Rejected" ${l.status==='Rejected'?'selected':''}>Rejected</option>
                     </select>
                 </td>
                 <td><input class="remarks-editor" value="${l.remarks||''}" onblur="updateField('prf_logs','${l.id}','remarks',this.value.toUpperCase())"></td>
             </tr>`).join('');
+    } else if (currentPage === 'TRANS') {
+        head.innerHTML = `<tr><th>Time</th><th>User</th><th>Action</th></tr>`;
+        body.innerHTML = transactionLogs.map(t => `<tr><td>${t.time}</td><td>${t.user}</td><td>${t.action}</td></tr>`).join('');
     }
 };
 
 window.updateField = (path, id, field, val) => {
     update(ref(db, `${path}/${id}`), { [field]: val });
-    logAction(id, `Updated ${field}`);
+    logAction(`Updated ${field} on ${id}`);
 };
 
-window.deleteEntry = (path, id) => confirm('Confirm deletion?') && remove(ref(db, `${path}/${id}`));
+window.deleteEntry = (path, id) => confirm('Confirm removal?') && remove(ref(db, `${path}/${id}`));
 
 // --- SAVING ---
 window.saveAsset = () => {
@@ -122,6 +122,7 @@ window.saveAsset = () => {
     if(!name) return alert("Missing name");
     const assetNo = `AST-${1000 + assets.length + 1}`;
     push(ref(db, 'asset_register'), { assetNo, name, type, dateAdded: new Date().toLocaleDateString('en-GB') });
+    logAction(`Registered asset ${assetNo}`);
     closeModal();
 };
 
@@ -130,14 +131,36 @@ window.savePRF = () => {
     const asset = document.getElementById('m-asset-select').value;
     const workshop = document.getElementById('m-workshop').value;
     push(ref(db, 'prf_logs'), { prf, asset, workshop, status: 'Pending', date: new Date().toLocaleDateString('en-GB') });
+    logAction(`Created PRF ${prf}`);
     closeModal();
 };
 
-// --- MODALS ---
+// --- TASK LIST HANDLER ---
+window.addTaskRow = () => {
+    const div = document.createElement('div');
+    div.style = "display:flex; gap:5px; margin-bottom:5px;";
+    div.innerHTML = `<input type="text" placeholder="Task Details" class="remarks-editor" style="border:1px solid var(--border);">
+                     <button onclick="this.parentElement.remove()" style="color:var(--danger); border:none; background:none;">&times;</button>`;
+    document.getElementById('t-task-list').appendChild(div);
+};
+
+window.saveTaskEntry = () => {
+    const sr = document.getElementById('t-sr').value;
+    const asset = document.getElementById('t-asset-select').value;
+    const wo = document.getElementById('t-wo').value;
+    const tasks = Array.from(document.getElementById('t-task-list').querySelectorAll('input')).map(i => i.value);
+    
+    tasks.forEach(t => {
+        push(ref(db, 'task_logs'), { sr, asset, wo, details: t, status: 'Pending', progress: 0, date: new Date().toLocaleDateString('en-GB') });
+    });
+    logAction(`Created tasks for ${asset}`);
+    closeModal();
+};
+
+// --- MODALS & UI ---
 window.openModal = () => {
-    const assetDropdowns = ['m-asset-select', 'y-asset-select', 't-asset-select'];
-    const opts = `<option value="">-- Choose Asset --</option>` + assets.map(a => `<option value="${a.name} [${a.assetNo}]">${a.name} (${a.assetNo})</option>`).join('');
-    assetDropdowns.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerHTML = opts; });
+    const options = `<option value="">-- Choose Asset --</option>` + assets.map(a => `<option value="${a.name} [${a.assetNo}]">${a.name} (${a.assetNo})</option>`).join('');
+    ['m-asset-select', 'y-asset-select', 't-asset-select'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerHTML = options; });
 
     document.getElementById('asset-form').style.display = currentPage === 'ASSETS' ? 'block' : 'none';
     document.getElementById('prf-form').style.display = currentPage === 'DASH' ? 'block' : 'none';
@@ -148,16 +171,12 @@ window.openModal = () => {
 
 window.closeModal = () => document.getElementById('entry-modal').style.display = 'none';
 
-window.toggleTheme = () => {
-    const current = document.body.getAttribute('data-theme');
-    document.body.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
-};
+window.toggleTheme = () => document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
 
-function logAction(id, action) {
+function logAction(action) {
     push(ref(db, 'transactions'), {
         time: new Date().toLocaleString(),
-        ref: id,
         action: action,
-        user: auth.currentUser.email
+        user: auth.currentUser?.email || 'System'
     });
 }
